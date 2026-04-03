@@ -17,15 +17,15 @@ provider "google" {
   zone    = "us-central1-a"
 }
 
-resource "google_service_account" "default" {
-  account_id = "xylos-automation"
-  display_name = "xylos-automation"
-}
-resource "google_project_iam_member" "sa_editor" {
-  project = var.project_id
-  role = "roles/editor"
-  member = "serviceAccount:${google_service_account.default.email}"
-}
+# resource "google_service_account" "default" {
+#   account_id = "xylos-automation"
+#   display_name = "xylos-automation"
+# }
+# resource "google_project_iam_member" "sa_editor" {
+#   project = var.project_id
+#   role = "roles/editor"
+#   member = "serviceAccount:${google_service_account.default.email}"
+# }
 
 resource "google_compute_instance" "default" {
   name = "migration-tool"
