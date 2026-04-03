@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Xylos Migration Engine</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); }
+        .login-box { background: var(--white); border: 1px solid var(--gray-border); border-radius: var(--radius); padding: 40px; width: 100%; max-width: 420px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+        .login-logo .nav-x { background: var(--navy); color: #fff; font-weight: 900; font-size: 1.2rem; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .login-title { font-size: 1.4rem; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
+        .login-sub { font-size: 13px; color: var(--gray-text); margin-bottom: 28px; }
+        .error-msg { background: #fee2e2; color: #991b1b; border-radius: 6px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+    </style>
+</head>
+<body>
+<div class="login-box">
+    <div class="login-logo">
+        <div class="nav-x">X</div>
+        <span style="font-weight:800; color:var(--navy);">Xylos Migration Engine</span>
+    </div>
+    <div class="login-title">Inloggen</div>
+    <div class="login-sub">Toegang enkel voor geautoriseerde Xylos medewerkers.</div>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <div class="field" style="margin-bottom:16px;">
+        <label>Gebruikersnaam</label>
+        <input type="text" id="username" placeholder="gebruikersnaam" autocomplete="username">
+    </div>
+    <div class="field" style="margin-bottom:24px;">
+        <label>Wachtwoord</label>
+        <input type="password" id="password" placeholder="••••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary btn-full" id="login-btn" onclick="doLogin()">
+        <div class="spinner"></div>
+        <span class="btn-text">Inloggen</span>
+    </button>
+</div>
+
+<script>
+    // Enter key support
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+    async function doLogin() {
+        const btn = document.getElementById('login-btn');
+        const err = document.getElementById('error-msg');
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        err.style.display = 'none';
+        btn.classList.add('running');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                window.location.href = '/index.html';
+            } else {
+                err.textContent = data.error;
+                err.style.display = 'block';
+            }
+        } catch (e) {
+            err.textContent = 'Kan de server niet bereiken.';
+            err.style.display = 'block';
+        } finally {
+            btn.classList.remove('running');
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
