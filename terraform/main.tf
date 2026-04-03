@@ -1,8 +1,3 @@
-provider "google" {
-  project = var.project_id
-  region  = "us-central1"
-  zone    = "us-central1-a"
-}
 terraform {
   required_providers {
     google = {
@@ -16,6 +11,12 @@ terraform {
     prefix = "migration-tool/state"
   }
 }
+provider "google" {
+  project = var.project_id
+  region  = "us-central1"
+  zone    = "us-central1-a"
+}
+
 resource "google_service_account" "default" {
   account_id = "xylos_automation"
   display_name = "xylos_automation"

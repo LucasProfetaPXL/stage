@@ -87,13 +87,28 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+      - name: Geef service account toegang tot bucket
+        run: |
+          gcloud projects add-iam-policy-binding ${{ secrets.TF_VAR_PROJECT_ID }} \
+            --member="serviceAccount:xylos-automation@${{ secrets.TF_VAR_PROJECT_ID }}.iam.gserviceaccount.com" \
+            --role="roles/storage.admin"
+          echo "Wachten op IAM propagatie..."
+          sleep 30
+
       - name: Maak GCS bucket aan als die niet bestaat
         run: |
           gcloud storage buckets describe gs://xylos-terraform-state 2>/dev/null || \
           gcloud storage buckets create gs://xylos-terraform-state \
             --location=us-central1 \
             --project=${{ secrets.TF_VAR_PROJECT_ID }}
-          sleep 5
+          sleep 10
+            - name: Maak GCS bucket aan als die niet bestaat
+              run: |
+                gcloud storage buckets describe gs://xylos-terraform-state 2>/dev/null || \
+                gcloud storage buckets create gs://xylos-terraform-state \
+                  --location=us-central1 \
+                  --project=${{ secrets.TF_VAR_PROJECT_ID }}
+                sleep 5
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
