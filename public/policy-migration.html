@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policy Migration | Xylos Migration Engine</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+/* ── CATEGORY SELECTOR ─────────────────────────────────────── */
+.cat-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 10px; margin-bottom: 28px; }
+.cat-card { background: var(--white); border: 2px solid var(--gray-border); border-radius: var(--radius); padding: 14px 10px 12px; cursor: pointer; text-align: center; transition: all .18s; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+.cat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gray-border); transition: background .18s; }
+.cat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.cat-card.active { border-color: transparent; box-shadow: var(--shadow-lg); }
+.cat-card.active::before { height: 4px; }
+.cat-icon { font-size: 22px; margin-bottom: 7px; line-height: 1; }
+.cat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--gray-text); transition: color .18s; line-height: 1.3; }
+.cat-card.active .cat-label { color: var(--navy); }
+.cat-card[data-cat="ca"]   { --cc: #e30613; }
+.cat-card[data-cat="av"]   { --cc: #f97316; }
+.cat-card[data-cat="epm"]  { --cc: #8b5cf6; }
+.cat-card[data-cat="comp"] { --cc: #0891b2; }
+.cat-card[data-cat="ap"]   { --cc: #16a34a; }
+.cat-card[data-cat="sb"]   { --cc: #d97706; }
+.cat-card[data-cat="sc"]   { --cc: #2563eb; }
+.cat-card[data-cat="dc"]   { --cc: #0d9488; }
+.cat-card[data-cat="ps"]   { --cc: #7c3aed; }
+.cat-card.active::before   { background: var(--cc); }
+.cat-card.active .cat-label { color: var(--cc); }
+
+/* ── INNER STEP TABS ───────────────────────────────────────── */
+.step-tabs { display: flex; background: var(--white); border-radius: var(--radius) var(--radius) 0 0; border: 1px solid var(--gray-border); border-bottom: none; overflow: hidden; }
+.step-tab { flex: 1; padding: 15px 10px; border: none; background: transparent; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.9px; color: var(--gray-text); display: flex; align-items: center; justify-content: center; gap: 8px; border-right: 1px solid var(--gray-border); transition: all .15s; position: relative; }
+.step-tab:last-child { border-right: none; }
+.step-tab:hover { background: var(--off-white); color: var(--navy); }
+.step-tab.active { background: var(--navy); color: var(--white); }
+.step-tab.done { background: var(--off-white); color: var(--lime-dark); }
+.step-tab.done .stab-num { background: var(--lime); color: var(--navy); }
+.stab-num { width: 20px; height: 20px; border-radius: 50%; background: var(--gray-border); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0; transition: all .15s; }
+.step-tab.active .stab-num { background: var(--lime); color: var(--navy); }
+.step-tab-body { background: var(--white); border: 1px solid var(--gray-border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 28px 28px 24px; margin-bottom: 20px; }
+.step-pane { display: none; }
+.step-pane.active { display: block; }
+
+/* ── SCRIPT INFO BANNER ────────────────────────────────────── */
+.script-banner { display: flex; align-items: center; gap: 14px; background: var(--navy); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; }
+.script-banner-icon { font-size: 22px; flex-shrink: 0; }
+.script-banner-text { flex: 1; }
+.script-banner-name { font-size: 11px; font-family: 'Consolas', monospace; color: var(--lime); font-weight: 600; }
+.script-banner-desc { font-size: 11.5px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+/* ── JSON FILE LIST ────────────────────────────────────────── */
+.json-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.json-toolbar-left { display: flex; align-items: center; gap: 10px; }
+.json-count { font-size: 12px; font-weight: 700; color: var(--navy); }
+.json-stats { display: flex; gap: 6px; }
+.json-list { border: 1px solid var(--gray-border); border-radius: var(--radius); overflow: hidden; margin-bottom: 18px; }
+.json-list-header { display: grid; grid-template-columns: 1fr 200px 110px 34px; gap: 12px; padding: 9px 16px; background: var(--navy); color: rgba(255,255,255,0.55); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.json-item { border-bottom: 1px solid var(--gray-border); overflow: hidden; }
+.json-item:last-child { border-bottom: none; }
+.json-item-row { display: grid; grid-template-columns: 1fr 200px 110px 34px; gap: 12px; padding: 13px 16px; align-items: center; cursor: pointer; transition: background .12s; font-size: 13px; }
+.json-item-row:hover { background: var(--off-white); }
+.json-item.open .json-item-row { background: #f8f9ff; border-bottom: 1px solid var(--gray-border); }
+.json-item-name { font-weight: 700; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.json-item-file { font-size: 11px; color: var(--gray-text); font-family: 'Consolas', monospace; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.json-chevron { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--gray-text); transition: transform .2s; justify-self: center; }
+.json-item.open .json-chevron { transform: rotate(90deg); }
+
+/* ── JSON DETAIL PANEL ─────────────────────────────────────── */
+.json-detail { display: none; padding: 18px 20px 20px; background: #f8f9ff; border-top: 1px dashed var(--gray-border); animation: slideDown .15s ease; }
+.json-item.open .json-detail { display: block; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.detail-field { background: var(--white); border: 1px solid var(--gray-border); border-radius: 5px; padding: 10px 12px; }
+.detail-field-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--gray-text); margin-bottom: 4px; }
+.detail-field-value { font-size: 12.5px; font-weight: 600; color: var(--navy); word-break: break-all; }
+.detail-field-value.mono { font-family: 'Consolas', monospace; font-size: 11px; font-weight: 400; color: var(--gray-text); }
+.detail-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.detail-tag { background: rgba(30,45,90,0.07); color: var(--navy); border-radius: 4px; padding: 3px 8px; font-size: 10.5px; font-weight: 600; }
+.raw-toggle { display: flex; align-items: center; gap: 8px; background: none; border: 1px solid var(--gray-border); border-radius: 4px; padding: 5px 12px; font-family: inherit; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--gray-text); cursor: pointer; transition: all .15s; margin-bottom: 10px; }
+.raw-toggle:hover { background: var(--off-white); color: var(--navy); }
+.raw-json { display: none; background: #0d1117; color: #c9d1d9; border-radius: var(--radius); padding: 14px; font-family: 'Consolas', monospace; font-size: 11.5px; max-height: 280px; overflow-y: auto; white-space: pre; line-height: 1.6; }
+.raw-json.visible { display: block; }
+.raw-json::-webkit-scrollbar { width: 5px; height: 5px; }
+.raw-json::-webkit-scrollbar-track { background: #111827; }
+.raw-json::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+
+/* ── EMPTY STATE ───────────────────────────────────────────── */
+.empty-state { text-align: center; padding: 44px 20px; color: var(--gray-text); }
+.empty-state-icon { font-size: 38px; margin-bottom: 12px; opacity: .4; }
+.empty-state-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 5px; }
+.empty-state-sub { font-size: 12px; }
+
+/* ── CATEGORY BADGE COLORS ─────────────────────────────────── */
+.badge-ca   { background: #fde8e8; color: #b91c1c; }
+.badge-av   { background: #ffedd5; color: #c2410c; }
+.badge-epm  { background: #ede9fe; color: #6d28d9; }
+.badge-comp { background: #e0f2fe; color: #0369a1; }
+.badge-ap   { background: #dcfce7; color: #15803d; }
+.badge-sb   { background: #fef9c3; color: #92400e; }
+.badge-sc   { background: #dbeafe; color: #1d4ed8; }
+.badge-dc   { background: #ccfbf1; color: #0f766e; }
+.badge-ps   { background: #ede9fe; color: #6d28d9; }
+
+/* ── RENAME ────────────────────────────────────────────────── */
+.rename-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.rename-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--gray-text); white-space: nowrap; width: 90px; flex-shrink: 0; }
+.rename-input { flex: 1; height: 36px; padding: 0 12px; border: 1.5px solid var(--gray-border); border-radius: 5px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--navy); background: var(--white); transition: border-color .2s, box-shadow .2s; }
+.rename-input:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,45,90,0.1); }
+.rename-input.modified { border-color: var(--lime-dark); background: rgba(109,212,0,0.04); }
+.rename-badge { font-size: 10px; font-weight: 700; color: var(--lime-dark); background: var(--lime-glow); padding: 2px 8px; border-radius: 4px; white-space: nowrap; display: none; }
+.rename-badge.visible { display: inline-block; }
+
+/* ── CHECKBOX ─────────────────────────────────────────────── */
+.json-item-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--navy); cursor: pointer; flex-shrink: 0; margin: 0; }
+.json-list-header { grid-template-columns: 28px 1fr 200px 110px 34px !important; }
+.json-list-header input[type="checkbox"] { accent-color: var(--lime); width: 15px; height: 15px; }
+.json-item-row    { grid-template-columns: 28px 1fr 200px 110px 34px !important; }
+.select-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; color: var(--gray-text); }
+.select-toolbar strong { color: var(--navy); }
+.btn-select-all { background: none; border: 1px solid var(--gray-border); border-radius: 4px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; cursor: pointer; font-family: inherit; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; transition: all .15s; }
+.btn-select-all:hover { background: var(--off-white); }
+
+/* ── STATE BADGE ───────────────────────────────────────────── */
+.state-enabled  { background: #dcfce7; color: #15803d; }
+.state-disabled { background: #fee2e2; color: #991b1b; }
+.state-report   { background: #fef9c3; color: #92400e; }
+.state-unknown  { background: var(--off-white); color: var(--gray-text); }
+
+.card-icon.blue  { background: #e0f0fa; }
+.card-icon.green { background: #dcfce7; }
+.card-icon.red   { background: #fde8e8; }
+.card-icon.purple{ background: #ede9fe; }
+.btn-sm { height: 34px; padding: 0 14px; font-size: 10.5px; }
+
+@media (max-width: 900px) { .cat-grid { grid-template-columns: repeat(4, 1fr); } .detail-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .cat-grid { grid-template-columns: repeat(2, 1fr); } .json-list-header, .json-item-row { grid-template-columns: 1fr 80px 34px; } .json-list-header span:nth-child(2), .json-item-row > *:nth-child(2) { display: none; } }
+    </style>
+</head>
+<body>
+
+<div id="nav-placeholder"></div>
+
+<div class="page">
+    <div class="page-header">
+        <div class="breadcrumb"><a href="index.html">Dashboard</a> / Migratie / Policy Migration</div>
+        <h1>Policy Migration</h1>
+        <p>Kies een policy-categorie, exporteer naar JSON, fix de JSON voor Graph API-compatibiliteit en importeer in de doeltenant.</p>
+    </div>
+
+    <div class="cat-grid" id="cat-grid">
+        <div class="cat-card active" data-cat="ca" onclick="selectCat('ca')"><div class="cat-icon">🛡️</div><div class="cat-label">Conditional<br>Access</div></div>
+        <div class="cat-card" data-cat="av" onclick="selectCat('av')"><div class="cat-icon">🦠</div><div class="cat-label">Antivirus</div></div>
+        <div class="cat-card" data-cat="epm" onclick="selectCat('epm')"><div class="cat-icon">🔐</div><div class="cat-label">EPM</div></div>
+        <div class="cat-card" data-cat="comp" onclick="selectCat('comp')"><div class="cat-icon">✅</div><div class="cat-label">Compliance</div></div>
+        <div class="cat-card" data-cat="ap" onclick="selectCat('ap')"><div class="cat-icon">📱</div><div class="cat-label">App<br>Protection</div></div>
+        <div class="cat-card" data-cat="sb" onclick="selectCat('sb')"><div class="cat-icon">🔒</div><div class="cat-label">Security<br>Baseline</div></div>
+        <div class="cat-card" data-cat="sc" onclick="selectCat('sc')"><div class="cat-icon">⚙️</div><div class="cat-label">Settings<br>Catalog</div></div>
+        <div class="cat-card" data-cat="dc" onclick="selectCat('dc')"><div class="cat-icon">💻</div><div class="cat-label">Device<br>Config</div></div>
+        <div class="cat-card" data-cat="ps" onclick="selectCat('ps')"><div class="cat-icon">📜</div><div class="cat-label">PowerShell<br>Scripts</div></div>
+    </div>
+
+    <div class="step-tabs" id="step-tabs">
+        <button type="button" class="step-tab active" id="stab-1" onclick="switchStep(1)"><span class="stab-num">1</span><span>Export</span></button>
+        <button type="button" class="step-tab" id="stab-2" onclick="switchStep(2)"><span class="stab-num">2</span><span>Fix JSON</span></button>
+        <button type="button" class="step-tab" id="stab-3" onclick="switchStep(3)"><span class="stab-num">3</span><span>Import</span></button>
+    </div>
+
+    <div class="step-tab-body">
+        <!-- ═══ STEP 1: EXPORT ══════════════════════════════ -->
+        <div class="step-pane active" id="pane-1">
+            <div class="script-banner" id="export-banner">
+                <div class="script-banner-icon">📤</div>
+                <div class="script-banner-text">
+                    <div class="script-banner-name" id="export-script-name">scripts/export/Export_conditional_access.ps1</div>
+                    <div class="script-banner-desc" id="export-script-desc">Exporteert alle CA-policies naar JSON</div>
+                </div>
+            </div>
+            <div class="form-grid" id="export-cred-grid">
+                <div class="field">
+                    <label>Tenant ID <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="exp-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                </div>
+                <div class="field">
+                    <label>Client ID (App ID) <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="exp-ClientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                </div>
+                <div class="field">
+                    <label>Client Secret <span style="color:var(--red)">*</span></label>
+                    <input type="password" id="exp-ClientSecret" placeholder="••••••••••••••••">
+                    <span class="input-hint">App Secret van de brontenant app-registratie</span>
+                </div>
+            </div>
+            <div class="alert alert-info" id="export-note">
+                ℹ️ &nbsp;Export gebruikt <strong>client credentials</strong> — geen browser popup nodig.
+            </div>
+            <button type="button" class="btn btn-outline btn-full" id="btn-export" onclick="runStep('export')">
+                <div class="spinner"></div>
+                <span class="btn-text">📤 Run Export Script</span>
+            </button>
+        </div>
+
+        <!-- ═══ STEP 2: FIX JSON ════════════════════════════ -->
+        <div class="step-pane" id="pane-2">
+            <div class="script-banner" id="fix-banner">
+                <div class="script-banner-icon">🔧</div>
+                <div class="script-banner-text">
+                    <div class="script-banner-name" id="fix-script-name">scripts/fix_json/fix_json_conditional_access.ps1</div>
+                    <div class="script-banner-desc" id="fix-script-desc">Verwijdert read-only velden, converteert naar camelCase, forceert state op disabled.</div>
+                </div>
+            </div>
+            <div class="json-toolbar">
+                <div class="json-toolbar-left">
+                    <span class="json-count" id="json-count">— bestanden</span>
+                    <div class="json-stats" id="json-stats"></div>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="loadJsonFiles()">↻ Vernieuwen</button>
+            </div>
+            <div class="select-toolbar" id="select-toolbar-fix" style="display:none">
+                <button type="button" class="btn-select-all" onclick="toggleSelectAll('json-list')">☑ Alles selecteren</button>
+                <span>of klik individuele rijen aan —</span>
+                <strong id="fix-selected-count">0</strong><span>geselecteerd</span>
+            </div>
+            <div class="json-list" id="json-list">
+                <div class="json-list-header">
+                    <input type="checkbox" onclick="toggleSelectAll('json-list')" id="check-all-fix" title="Alles selecteren">
+                    <span>Policy naam</span><span>Type</span><span>Status</span><span></span>
+                </div>
+                <div class="empty-state" id="json-empty">
+                    <div class="empty-state-icon">📂</div>
+                    <div class="empty-state-title">Nog geen JSON-bestanden</div>
+                    <div class="empty-state-sub">Voer eerst Stap 1 (Export) uit om bestanden aan te maken.</div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-lime btn-full" id="btn-fix" onclick="runStep('fix_json')">
+                <div class="spinner"></div>
+                <span class="btn-text">🔧 Run Fix JSON Script</span>
+            </button>
+        </div>
+
+        <!-- ═══ STEP 3: IMPORT ══════════════════════════════ -->
+        <div class="step-pane" id="pane-3">
+            <div class="script-banner" id="import-banner">
+                <div class="script-banner-icon">📥</div>
+                <div class="script-banner-text">
+                    <div class="script-banner-name" id="import-script-name">scripts/import/import_conditional_access.ps1</div>
+                    <div class="script-banner-desc" id="import-script-desc">POST alle gefixte JSON-bestanden naar Graph API.</div>
+                </div>
+            </div>
+            <div class="form-grid" id="import-cred-grid">
+                <div class="field">
+                    <label>Tenant ID <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="imp-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                </div>
+                <div class="field">
+                    <label>Client ID (App ID) <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="imp-ClientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                </div>
+                <div class="field">
+                    <label>Client Secret <span style="color:var(--red)">*</span></label>
+                    <input type="password" id="imp-ClientSecret" placeholder="••••••••••••••••">
+                    <span class="input-hint">App Secret van de doeltenant app-registratie</span>
+                </div>
+            </div>
+            <div class="json-toolbar">
+                <div class="json-toolbar-left">
+                    <span class="json-count" id="import-json-count">— bestanden gereed</span>
+                    <div class="json-stats" id="import-json-stats"></div>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="loadJsonFilesImport()">↻ Vernieuwen</button>
+            </div>
+            <div class="select-toolbar" id="select-toolbar-import" style="display:none">
+                <button type="button" class="btn-select-all" onclick="toggleSelectAll('import-json-list')">☑ Alles selecteren</button>
+                <span>of klik individuele rijen aan —</span>
+                <strong id="import-selected-count">0</strong><span>geselecteerd</span>
+            </div>
+            <div class="json-list" id="import-json-list">
+                <div class="json-list-header">
+                    <input type="checkbox" onclick="toggleSelectAll('import-json-list')" id="check-all-import" title="Alles selecteren">
+                    <span>Policy naam</span><span>Type</span><span>Status</span><span></span>
+                </div>
+                <div class="empty-state" id="import-json-empty">
+                    <div class="empty-state-icon">🔧</div>
+                    <div class="empty-state-title">Fix JSON eerst</div>
+                    <div class="empty-state-sub">Voer Stap 2 (Fix JSON) uit voor je importeert.</div>
+                </div>
+            </div>
+            <div class="alert alert-warning">
+                ⚠️ &nbsp;Policies worden aangemaakt met status <strong>disabled</strong>. Schakel ze handmatig in na verificatie.
+            </div>
+            <button type="button" class="btn btn-danger btn-full" id="btn-import" onclick="runStep('import')">
+                <div class="spinner"></div>
+                <span class="btn-text">📥 Run Import Script</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── CONSOLE ─────────────────────────────────────────── -->
+    <div class="console-wrap">
+        <div class="console-header">
+            <div class="console-header-left">
+                <div class="console-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+                <span class="console-title" id="console-title">PowerShell Output</span>
+            </div>
+            <button type="button" class="console-clear" onclick="consoleClear()">Wissen</button>
+        </div>
+        <div class="console-body" id="output">Selecteer een categorie en voer een stap uit...</div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const CATS = {
+    ca:   { label: 'Conditional Access', export: { script: 'export/Export_conditional_access', desc: 'Exporteert alle CA-policies via Get-MgBetaIdentityConditionalAccessPolicy → GoldenTenant_Backup\\ConditionalAccess\\' }, fix: { script: 'fix_json/fix_json_conditional_access', desc: 'Verwijdert read-only velden, camelCase conversie, forceert state op disabled.' }, import: { script: 'import/import_conditional_access', desc: 'POST CA-policies naar Graph API via client credentials.' }, note: 'CA-policies worden geïmporteerd met status <strong>disabled</strong>. Schakel ze handmatig in na verificatie.' },
+    av:   { label: 'Antivirus', export: { script: 'export/Export_antivirus', desc: 'Exporteert Endpoint Security Antivirus-profielen → GoldenTenant_Backup\\Antivirus\\' }, fix: { script: 'fix_json/fix_json_antiVirus', desc: 'Verwijdert read-only velden en herstructureert voor Graph API-compatibiliteit.' }, import: { script: 'import/import_antivirus', desc: 'Importeert Antivirus (Defender) profielen via Graph API.' }, note: 'Zorg dat de template-IDs overeenkomen tussen bron- en doeltenant.' },
+    epm:  { label: 'EPM', export: { script: 'export/Export_epm', desc: 'Exporteert EPM elevation rules en policies → GoldenTenant_Backup\\EndpointPrivilegeManagement\\' }, fix: { script: 'fix_json/fix_json_epm', desc: 'Herstructureert EPM JSON — past OData-types en elevation-velden aan.' }, import: { script: 'import/import_epm', desc: 'Importeert EPM policies naar deviceManagement/configurationPolicies.' }, note: 'EPM vereist een <strong>Intune Suite</strong> of EPM add-on licentie in de doeltenant.' },
+    comp: { label: 'Compliance', export: { script: 'export/Export_compliance', desc: 'Exporteert Compliance Policies → GoldenTenant_Backup\\CompliancePolicies\\' }, fix: { script: 'fix_json/fix_json_compliance', desc: 'Verwijdert scheduledActionsForRule-conflicten en incompatibele compliance-velden.' }, import: { script: 'import/import_compliance', desc: 'Importeert Compliance policies naar deviceManagement/deviceCompliancePolicies.' }, note: null },
+    ap:   { label: 'App Protection', export: { script: 'export/Export_app_protection', desc: 'Exporteert App Protection (MAM) policies → GoldenTenant_Backup\\AppProtection\\' }, fix: { script: 'fix_json/fix_json_appprotection', desc: 'Past App Protection (MAM) JSON aan — verwijdert platform-specifieke read-only velden.' }, import: { script: 'import/import_app_protection', desc: 'Importeert App Protection (MAM) policies naar deviceAppManagement/managedAppPolicies.' }, note: 'App Protection (MAM) policies — iOS en Android. Vereist <strong>DeviceManagementApps.ReadWrite.All</strong> scope.' },
+    sb:   { label: 'Security Baseline', export: { script: 'export/Export_security_baseline', desc: 'Exporteert Security Baseline policies → GoldenTenant_Backup\\SecurityBaselines\\' }, fix: { script: 'fix_json/fix_json_securityBaseline', desc: 'Verwerkt templateId-referenties en verwijdert intent-specifieke velden.' }, import: { script: 'import/import_security_baseline', desc: 'Importeert Security Baselines naar deviceManagement/intents.' }, note: 'Security Baselines zijn <strong>versiegebonden</strong>. Zorg dat dezelfde template-versie beschikbaar is in de doeltenant.' },
+    sc:   { label: 'Settings Catalog', export: { script: 'export/Export_settings_catalog', desc: 'Exporteert Settings Catalog policies → GoldenTenant_Backup\\SettingsCatalog\\' }, fix: { script: 'fix_json/fix_json_settingsCatalog', desc: 'Corrigeert settingDefinitionId-referenties en @odata.type voor ChoiceSetting imports.' }, import: { script: 'import/import_settings_catalog', desc: 'Importeert Settings Catalog policies naar deviceManagement/configurationPolicies.' }, note: 'Vereist <strong>DeviceManagementConfiguration.ReadWrite.All</strong> scope in de app-registratie.' },
+    dc:   { label: 'Device Configurations', export: { script: 'export/Export_device_config', desc: 'Exporteert Device Configuration profielen → GoldenTenant_Backup\\DeviceConfigurations\\' }, fix: { script: 'fix_json/fix_json_device_config', desc: 'Verwijdert read-only velden, platslaat AdditionalProperties voor Graph API import.' }, import: { script: 'import/import_device_config', desc: 'Importeert Device Configurations naar deviceManagement/deviceConfigurations.' }, note: null },
+    ps:   { label: 'PowerShell Scripts', export: { script: 'export/Export_powershell_scripts', desc: 'Exporteert PowerShell scripts → GoldenTenant_Backup\\PowerShellScripts\\' }, fix: { script: 'fix_json/fix_json_powershell_scripts', desc: 'Verwijdert read-only metadata, behoudt scriptContent (base64) en enforceSignatureCheck.' }, import: { script: 'import/import_powershell_scripts', desc: 'Importeert PowerShell scripts naar deviceManagement/deviceManagementScripts.' }, note: null },
+};
+
+let activeCat = 'ca', activeStep = 1, loadingFix = false, loadingImport = false;
+const renames = {};
+
+function selectCat(cat) {
+    activeCat = cat;
+    document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.cat-card[data-cat="${cat}"]`).classList.add('active');
+    ['stab-1','stab-2','stab-3'].forEach(id => { const el = document.getElementById(id); el.classList.remove('active','done'); });
+    document.getElementById('stab-1').classList.add('active');
+    activeStep = 1;
+    updateBanners();
+    switchStep(1, false);
+    Object.keys(renames).forEach(k => delete renames[k]);
+    clearJsonList('json-list', 'json-empty');
+    clearJsonList('import-json-list', 'import-json-empty');
+    consolePrint(`> Categorie gewijzigd naar: ${CATS[cat].label}`, 'info');
+}
+
+function updateBanners() {
+    const cfg = CATS[activeCat];
+    const expTab = document.getElementById('stab-1');
+    if (!cfg.export) {
+        expTab.disabled = true; expTab.style.opacity = '0.4';
+        document.getElementById('export-script-name').textContent = 'Geen dedicated export-script';
+        document.getElementById('export-script-desc').textContent = 'Deze categorie heeft geen apart export-script. Sla Stap 1 over.';
+        document.getElementById('export-note').style.display = 'none';
+        document.getElementById('export-cred-grid').style.display = 'none';
+        document.getElementById('btn-export').disabled = true;
+        document.getElementById('btn-export').style.opacity = '0.4';
+    } else {
+        expTab.disabled = false; expTab.style.opacity = '';
+        document.getElementById('export-script-name').textContent = `scripts/${cfg.export.script}.ps1`;
+        document.getElementById('export-script-desc').textContent = cfg.export.desc;
+        document.getElementById('export-note').style.display = '';
+        document.getElementById('export-cred-grid').style.display = '';
+        document.getElementById('btn-export').disabled = false;
+        document.getElementById('btn-export').style.opacity = '';
+    }
+    const fixTab = document.getElementById('stab-2');
+    if (!cfg.fix) {
+        fixTab.disabled = true; fixTab.style.opacity = '0.4';
+        document.getElementById('fix-script-name').textContent = 'Geen fix stap nodig';
+        document.getElementById('fix-script-desc').textContent = 'Deze categorie heeft geen fix_json script.';
+        document.getElementById('btn-fix').disabled = true;
+        document.getElementById('btn-fix').style.opacity = '0.4';
+    } else {
+        fixTab.disabled = false; fixTab.style.opacity = '';
+        document.getElementById('fix-script-name').textContent = `scripts/${cfg.fix.script}.ps1`;
+        document.getElementById('fix-script-desc').textContent = cfg.fix.desc;
+        document.getElementById('btn-fix').disabled = false;
+        document.getElementById('btn-fix').style.opacity = '';
+    }
+    document.getElementById('import-script-name').textContent = `scripts/${cfg.import.script}.ps1`;
+    document.getElementById('import-script-desc').textContent = cfg.import.desc;
+    if (cfg.note) {
+        let noteBox = document.getElementById('cat-note-box');
+        if (!noteBox) { noteBox = document.createElement('div'); noteBox.id = 'cat-note-box'; noteBox.className = 'alert alert-warning'; noteBox.style.marginTop = '0'; }
+        noteBox.innerHTML = `⚠️ &nbsp;${cfg.note}`;
+        const pane1 = document.getElementById('pane-1');
+        pane1.insertBefore(noteBox, document.getElementById('btn-export'));
+    } else {
+        const noteBox = document.getElementById('cat-note-box');
+        if (noteBox) noteBox.remove();
+    }
+}
+
+function switchStep(step, updateBans = true) {
+    activeStep = step;
+    document.querySelectorAll('.step-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById(`pane-${step}`).classList.add('active');
+    document.querySelectorAll('.step-tab').forEach((t, i) => {
+        t.classList.remove('active');
+        if (i + 1 < step) t.classList.add('done');
+        else if (i + 1 === step) t.classList.add('active');
+    });
+    if (step === 2) loadJsonFiles();
+    if (step === 3) loadJsonFilesImport();
+    if (updateBans) updateBanners();
+}
+
+async function runStep(stepType) {
+    const cfg = CATS[activeCat];
+    let scriptPath, btnId;
+    if (stepType === 'export') { if (!cfg.export) return; scriptPath = cfg.export.script; btnId = 'btn-export'; }
+    else if (stepType === 'fix_json') { if (!cfg.fix) return; scriptPath = cfg.fix.script; btnId = 'btn-fix'; }
+    else { scriptPath = cfg.import.script; btnId = 'btn-import'; }
+
+    const btn = document.getElementById(btnId);
+    btn.classList.add('running'); btn.disabled = true;
+    document.getElementById('console-title').textContent = `PowerShell — ${scriptPath.split('/').pop()}.ps1`;
+    consoleClear();
+    consolePrint(`> Script: ${scriptPath}.ps1`, 'info');
+    consolePrint(`> Verbinding maken met server...`, 'info');
+
+    const payload = {};
+
+    if (stepType === 'export') {
+        const tenantId = document.getElementById('exp-TenantId')?.value.trim();
+        const clientId = document.getElementById('exp-ClientId')?.value.trim();
+        const clientSecret = document.getElementById('exp-ClientSecret')?.value.trim();
+        if (!tenantId || !clientId || !clientSecret) {
+            consolePrint(`\n[FOUT] Vul Tenant ID, Client ID én Client Secret in.`, 'err');
+            btn.classList.remove('running'); btn.disabled = false; return;
+        }
+        payload.TenantId = tenantId; payload.ClientId = clientId; payload.ClientSecret = clientSecret;
+        consolePrint(`> Tenant: ${tenantId}`, 'info');
+    } else if (stepType === 'import') {
+        const tenantId     = document.getElementById('imp-TenantId')?.value.trim();
+        const clientId     = document.getElementById('imp-ClientId')?.value.trim();
+        const clientSecret = document.getElementById('imp-ClientSecret')?.value.trim();
+        if (!tenantId || !clientId || !clientSecret) {
+            consolePrint(`\n[FOUT] Vul Tenant ID, Client ID én Client Secret in voor je importeert.`, 'err');
+            btn.classList.remove('running'); btn.disabled = false; return;
+        }
+        payload.TenantId = tenantId; payload.ClientId = clientId; payload.ClientSecret = clientSecret;
+        const selected = getSelectedFiles('import-json-list');
+        if (selected.length === 0) {
+            consolePrint(`\n[FOUT] Selecteer minstens één policy om te importeren.`, 'err');
+            btn.classList.remove('running'); btn.disabled = false; return;
+        }
+        payload.SelectedFiles = selected.join(',');
+        const renameJson = getRenameMapJson();
+        if (renameJson !== '{}') { payload.RenameMap = renameJson; consolePrint(`> ${Object.keys(renames).length} policies hernoemd.`, 'info'); }
+        consolePrint(`> ${selected.length} policies geselecteerd voor import.`, 'info');
+        consolePrint(`> Doeltenant: ${tenantId}`, 'info');
+    }
+
+    try {
+        const res = await fetch(`http://localhost:3000/api/run/${scriptPath}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (!res.ok) { consolePrint(`\n[FOUT] Server status ${res.status}`, 'err'); consoleWriteLines(await res.text()); return; }
+        const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
+        while (true) {
+            const { done, value } = await reader.read(); if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n'); buffer = lines.pop();
+            lines.forEach(line => { if (line.trim()) consolePrint(line); });
+        }
+        if (buffer.trim()) consolePrint(buffer);
+        consolePrint('\n> Klaar.', 'ok');
+        if (stepType === 'export') { markTabDone(1); activateTab(2); setTimeout(loadJsonFiles, 500); }
+        else if (stepType === 'fix_json') { markTabDone(2); activateTab(3); setTimeout(loadJsonFilesImport, 500); }
+        else { markTabDone(3); }
+    } catch (err) {
+        consolePrint(`\n[NETWERK FOUT] Kan Migration Engine niet bereiken.`, 'err');
+        consolePrint(`Controleer of 'node server.js' draait op poort 3000.`, 'warn');
+        consolePrint(`Details: ${err.message}`, 'err');
+    } finally { btn.classList.remove('running'); btn.disabled = false; }
+}
+
+function markTabDone(n) { const el = document.getElementById(`stab-${n}`); if (el) { el.classList.remove('active'); el.classList.add('done'); } }
+function activateTab(n) { const el = document.getElementById(`stab-${n}`); if (el && !el.classList.contains('done')) el.classList.add('active'); }
+
+async function loadJsonFiles() {
+    if (loadingFix) return; loadingFix = true;
+    try {
+        const res = await fetch(`http://localhost:3000/api/json-files/${activeCat}`);
+        const data = await res.json();
+        if (data.error) { renderJsonList([], 'json-list', 'json-count', 'json-stats', 'json-empty'); return; }
+        if (!data.exists) { renderJsonList([], 'json-list', 'json-count', 'json-stats', 'json-empty'); document.getElementById('json-count').textContent = 'Map niet gevonden'; }
+        else { renderJsonList(data.files || [], 'json-list', 'json-count', 'json-stats', 'json-empty'); }
+    } catch(e) { document.getElementById('json-count').textContent = 'Server niet bereikbaar'; }
+    finally { loadingFix = false; }
+}
+
+async function loadJsonFilesImport() {
+    if (loadingImport) return; loadingImport = true;
+    try {
+        const res = await fetch(`http://localhost:3000/api/json-files/${activeCat}`);
+        const data = await res.json();
+        if (data.error) { renderJsonList([], 'import-json-list', 'import-json-count', 'import-json-stats', 'import-json-empty'); return; }
+        renderJsonList(data.files || [], 'import-json-list', 'import-json-count', 'import-json-stats', 'import-json-empty');
+    } catch(e) { document.getElementById('import-json-count').textContent = 'Server niet bereikbaar'; }
+    finally { loadingImport = false; }
+}
+
+function renderJsonList(files, listId, countId, statsId, emptyId) {
+    const list = document.getElementById(listId), countEl = document.getElementById(countId), statsEl = document.getElementById(statsId), emptyEl = document.getElementById(emptyId);
+    if (files !== null) { list.querySelectorAll('.json-item').forEach(el => el.remove()); }
+    else {
+        if (!list.querySelector('.json-item')) {
+            countEl.textContent = 'Laden...'; statsEl.innerHTML = '';
+            emptyEl.querySelector('.empty-state-title').textContent = 'Laden...';
+            emptyEl.querySelector('.empty-state-sub').textContent = 'Bestanden ophalen van server.';
+            emptyEl.querySelector('.empty-state-icon').textContent = '⏳';
+            emptyEl.style.display = 'block';
+        }
+        return;
+    }
+    if (!files || files.length === 0) {
+        countEl.textContent = '0 bestanden'; statsEl.innerHTML = '';
+        emptyEl.querySelector('.empty-state-title').textContent = 'Geen JSON-bestanden gevonden';
+        emptyEl.querySelector('.empty-state-sub').textContent = listId === 'json-list' ? 'Voer Stap 1 (Export) uit om bestanden aan te maken.' : 'Voer Stap 2 (Fix JSON) uit voor je importeert.';
+        emptyEl.querySelector('.empty-state-icon').textContent = listId === 'json-list' ? '📂' : '🔧';
+        emptyEl.style.display = 'block'; return;
+    }
+    emptyEl.style.display = 'none';
+    const toolbarId = listId === 'json-list' ? 'select-toolbar-fix' : 'select-toolbar-import';
+    const toolbar = document.getElementById(toolbarId);
+    if (toolbar) toolbar.style.display = files.length > 0 ? 'flex' : 'none';
+    const validCount = files.filter(f => f.valid).length, invalidCount = files.length - validCount;
+    countEl.textContent = `${files.length} bestanden`;
+    statsEl.innerHTML = `<span class="badge badge-green">${validCount} geldig</span>` + (invalidCount > 0 ? `&nbsp;<span class="badge badge-red">${invalidCount} fout</span>` : '');
+    files.forEach(file => {
+        const p = file.parsed;
+        const name = p?.displayName || p?.name || file.fileName.replace('.json','');
+        const state = p?.state || 'unknown', type = p?.['@odata.type'] || '—';
+        const stateClass = getStateClass(state), catClass = `badge-${activeCat}`;
+        const item = document.createElement('div');
+        item.className = 'json-item';
+        item.innerHTML = `
+            <div class="json-item-row" onclick="handleRowClick(event, this.parentElement, '${escHtml(file.fileName)}', '${listId}')">
+                <input type="checkbox" class="file-checkbox" data-filename="${escHtml(file.fileName)}" onclick="event.stopPropagation(); updateSelectedCount('${listId}')" ${file.valid ? 'checked' : ''}>
+                <div><div class="json-item-name">${escHtml(name)}</div><div class="json-item-file">${escHtml(file.fileName)}</div></div>
+                <div><span class="badge ${catClass}">${escHtml(shortType(type))}</span></div>
+                <div>${file.valid ? `<span class="badge ${stateClass}">${escHtml(state)}</span>` : `<span class="badge badge-red">Parse fout</span>`}</div>
+                <div class="json-chevron">›</div>
+            </div>
+            <div class="json-detail">${buildDetail(file)}</div>`;
+        list.appendChild(item);
+    });
+}
+
+function getStateClass(state) {
+    if (!state) return 'state-unknown';
+    const s = state.toLowerCase();
+    if (s === 'enabled') return 'state-enabled';
+    if (s === 'disabled') return 'state-disabled';
+    if (s.includes('report')) return 'state-report';
+    return 'state-unknown';
+}
+function shortType(t) { if (!t || t === '—') return '—'; return t.split('.').pop() || t; }
+
+function buildDetail(file) {
+    if (!file.valid) return `<div class="alert alert-warning" style="margin:0">⚠️ &nbsp;Dit bestand kon niet worden geparsed als geldige JSON. Controleer de bestandsinhoud.</div>`;
+    const p = file.parsed;
+    const currentName = renames[file.fileName] || p?.displayName || p?.name || file.fileName.replace('.json','');
+    const safeFile = escHtml(file.fileName);
+    let html = `
+        <div class="rename-wrap">
+            <span class="rename-label">📝 Naam</span>
+            <input type="text" class="rename-input ${renames[file.fileName] ? 'modified' : ''}"
+                   id="rename-${safeFile.replace(/[^a-z0-9]/gi,'_')}"
+                   value="${escHtml(currentName)}"
+                   data-original="${escHtml(p?.displayName || p?.name || '')}"
+                   data-filename="${safeFile}"
+                   oninput="handleRename(this)" placeholder="Policy naam...">
+            <span class="rename-badge ${renames[file.fileName] ? 'visible' : ''}" id="rename-badge-${safeFile.replace(/[^a-z0-9]/gi,'_')}">gewijzigd</span>
+        </div>`;
+    const fieldMap = { 'displayName':'Display Name', 'name':'Name', 'id':'ID', 'state':'State', 'description':'Beschrijving', '@odata.type':'OData Type', 'templateId':'Template ID', 'platforms':'Platforms', 'technologies':'Technologies', 'createdDateTime':'Aangemaakt', 'modifiedDateTime':'Gewijzigd' };
+    html += '<div class="detail-grid">';
+    Object.entries(fieldMap).forEach(([key, label]) => {
+        const val = p[key];
+        if (val === undefined || val === null || val === '') return;
+        const strVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
+        const mono = key.includes('Id') || key.includes('DateTime') || key.includes('type');
+        html += `<div class="detail-field"><div class="detail-field-label">${escHtml(label)}</div><div class="detail-field-value ${mono ? 'mono' : ''}">${escHtml(strVal)}</div></div>`;
+    });
+    html += '</div>';
+    if (p.conditions) {
+        const cond = p.conditions, tags = [];
+        if (cond.users?.includeUsers?.length)  tags.push(`👤 ${cond.users.includeUsers.length} users`);
+        if (cond.users?.includeGroups?.length) tags.push(`👥 ${cond.users.includeGroups.length} groups`);
+        if (cond.applications?.includeApplications?.length) tags.push(`📦 ${cond.applications.includeApplications.length} apps`);
+        if (cond.platforms?.includePlatforms?.length) tags.push(`💻 ${cond.platforms.includePlatforms.join(', ')}`);
+        if (cond.locations?.includeLocations?.length) tags.push(`📍 ${cond.locations.includeLocations.length} locations`);
+        if (tags.length) html += `<div class="detail-field-label" style="margin-bottom:6px">Conditions</div><div class="detail-tags">` + tags.map(t => `<span class="detail-tag">${escHtml(t)}</span>`).join('') + `</div>`;
+    }
+    if (p.grantControls) {
+        const ctrls = p.grantControls.builtInControls || [];
+        if (ctrls.length) html += `<div class="detail-field-label" style="margin-bottom:6px">Grant Controls</div><div class="detail-tags">` + ctrls.map(c => `<span class="detail-tag">🔑 ${escHtml(c)}</span>`).join('') + `</div>`;
+    }
+    if (Array.isArray(p.settings) && p.settings.length > 0) {
+        html += `<div class="detail-field-label" style="margin-bottom:6px">Settings (${p.settings.length})</div><div class="detail-tags">` +
+            p.settings.slice(0, 6).map(s => { const id = s.settingInstance?.settingDefinitionId || ''; return `<span class="detail-tag">⚙️ ${escHtml(id.split('_').pop() || id)}</span>`; }).join('') +
+            (p.settings.length > 6 ? `<span class="detail-tag">+${p.settings.length - 6} meer</span>` : '') + `</div>`;
+    }
+    const rawId = 'raw-' + file.fileName.replace(/[^a-z0-9]/gi, '_');
+    html += `<button type="button" class="raw-toggle" onclick="toggleRaw('${rawId}', this)"><span>{ }</span> Raw JSON tonen</button><pre class="raw-json" id="${rawId}">${escHtml(JSON.stringify(file.parsed, null, 2))}</pre>`;
+    return html;
+}
+
+function toggleJsonItem(item) { item.classList.toggle('open'); }
+function toggleRaw(id, btn) { const pre = document.getElementById(id); if (!pre) return; pre.classList.toggle('visible'); btn.textContent = pre.classList.contains('visible') ? '{ } Raw JSON verbergen' : '{ } Raw JSON tonen'; }
+function clearJsonList(listId, emptyId) {
+    const list = document.getElementById(listId), empty = document.getElementById(emptyId);
+    list.querySelectorAll('.json-item').forEach(el => el.remove());
+    empty.querySelector('.empty-state-icon').textContent = '📂';
+    empty.querySelector('.empty-state-title').textContent = 'Nog geen JSON-bestanden';
+    empty.querySelector('.empty-state-sub').textContent = 'Voer de vorige stap uit.';
+    empty.style.display = 'block';
+    document.getElementById(listId === 'json-list' ? 'json-count' : 'import-json-count').textContent = '— bestanden';
+    document.getElementById(listId === 'json-list' ? 'json-stats' : 'import-json-stats').innerHTML = '';
+}
+function escHtml(str) { return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function handleRename(input) {
+    const filename = input.dataset.filename, original = input.dataset.original, newName = input.value.trim();
+    const badgeId = 'rename-badge-' + filename.replace(/[^a-z0-9]/gi, '_'), badge = document.getElementById(badgeId);
+    if (newName && newName !== original) { renames[filename] = newName; input.classList.add('modified'); if (badge) badge.classList.add('visible'); }
+    else { delete renames[filename]; input.classList.remove('modified'); if (badge) badge.classList.remove('visible'); }
+    const item = input.closest('.json-item'); if (item) { const nameEl = item.querySelector('.json-item-name'); if (nameEl) nameEl.textContent = newName || original; }
+}
+function getRenameMapJson() { return JSON.stringify(renames); }
+function handleRowClick(event, item, fileName, listId) {
+    if (event.target.type === 'checkbox') return;
+    const cb = item.querySelector('.file-checkbox');
+    if (cb) { cb.checked = !cb.checked; updateSelectedCount(listId); }
+    toggleJsonItem(item);
+}
+function updateSelectedCount(listId) {
+    const list = document.getElementById(listId);
+    const checked = list.querySelectorAll('.file-checkbox:checked').length, total = list.querySelectorAll('.file-checkbox').length;
+    const el = document.getElementById(listId === 'json-list' ? 'fix-selected-count' : 'import-selected-count');
+    if (el) el.textContent = checked;
+    const header = document.getElementById(listId === 'json-list' ? 'check-all-fix' : 'check-all-import');
+    if (header) { header.checked = checked === total && total > 0; header.indeterminate = checked > 0 && checked < total; }
+}
+function toggleSelectAll(listId) {
+    const list = document.getElementById(listId), header = document.getElementById(listId === 'json-list' ? 'check-all-fix' : 'check-all-import');
+    const boxes = list.querySelectorAll('.file-checkbox'), allChecked = [...boxes].every(b => b.checked);
+    boxes.forEach(b => { b.checked = !allChecked; });
+    if (header) { header.checked = !allChecked; header.indeterminate = false; }
+    updateSelectedCount(listId);
+}
+function getSelectedFiles(listId) { return [...document.getElementById(listId).querySelectorAll('.file-checkbox:checked')].map(cb => cb.dataset.filename); }
+
+document.addEventListener('DOMContentLoaded', () => { updateBanners(); });
+</script>
+</body>
+</html>

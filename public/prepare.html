@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prepare | Xylos Migration Engine</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .tenant-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .tenant-block {
+            background: var(--white);
+            border: 1px solid var(--gray-border);
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            box-shadow: var(--shadow);
+        }
+        .tenant-block-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--gray-border);
+        }
+        .tenant-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+        }
+        .badge-source { background: rgba(30,45,90,0.08); color: var(--navy); }
+        .badge-dest   { background: var(--lime-glow); color: var(--lime-dark); }
+        .result-box {
+            background: var(--off-white);
+            border: 1px solid var(--gray-border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            margin-top: 14px;
+            font-size: 12px;
+            display: none;
+        }
+        .result-box.visible { display: block; }
+        .result-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--gray-border);
+            font-size: 12px;
+        }
+        .result-row:last-child { border-bottom: none; }
+        .result-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--gray-text);
+            width: 90px;
+            flex-shrink: 0;
+        }
+        .result-value {
+            font-family: 'Consolas', monospace;
+            font-size: 11.5px;
+            color: var(--navy);
+            word-break: break-all;
+            font-weight: 600;
+        }
+        .copy-btn {
+            margin-left: auto;
+            background: none;
+            border: 1px solid var(--gray-border);
+            border-radius: 3px;
+            padding: 2px 8px;
+            font-size: 10px;
+            cursor: pointer;
+            color: var(--gray-text);
+            font-family: inherit;
+            flex-shrink: 0;
+        }
+        .copy-btn:hover { background: var(--off-white); color: var(--navy); }
+
+        .step-flow {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin-bottom: 28px;
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .step-flow-item {
+            flex: 1;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-right: 1px solid var(--gray-border);
+        }
+        .step-flow-item:last-child { border-right: none; }
+        .step-flow-num {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: var(--gray-border);
+            color: var(--gray-text);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 800;
+            flex-shrink: 0;
+        }
+        .step-flow-item.done .step-flow-num { background: var(--lime); color: var(--navy); }
+        .step-flow-text { font-size: 12px; font-weight: 600; color: var(--navy); }
+        .step-flow-sub  { font-size: 10.5px; color: var(--gray-text); margin-top: 1px; }
+
+        @media (max-width: 768px) {
+            .tenant-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="nav-placeholder"></div>
+
+<div class="page">
+    <div class="page-header">
+        <div class="breadcrumb"><a href="index.html">Dashboard</a> / Prepare</div>
+        <h1>Prepare Environment</h1>
+        <p>Maak de benodigde app-registraties aan in beide tenants en ken de juiste API-permissies toe vóór de migratie start.</p>
+    </div>
+
+    <!-- Step flow indicator -->
+    <div class="step-flow">
+        <div class="step-flow-item" id="flow-1">
+            <div class="step-flow-num">1</div>
+            <div>
+                <div class="step-flow-text">App aanmaken — Source</div>
+                <div class="step-flow-sub">New_app.ps1 in brontenant</div>
+            </div>
+        </div>
+        <div class="step-flow-item" id="flow-2">
+            <div class="step-flow-num">2</div>
+            <div>
+                <div class="step-flow-text">App aanmaken — Destination</div>
+                <div class="step-flow-sub">New_app.ps1 in doeltenant</div>
+            </div>
+        </div>
+        <div class="step-flow-item" id="flow-3">
+            <div class="step-flow-num">3</div>
+            <div>
+                <div class="step-flow-text">Permissies toekennen</div>
+                <div class="step-flow-sub">Policies_To_app.ps1 + Admin Consent</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STAP 1 & 2: App aanmaken in beide tenants -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon blue">📦</div>
+            <div>
+                <div class="card-title">Stap 1 & 2 — App Registraties Aanmaken</div>
+                <div class="card-subtitle">Maak een app-registratie aan in de source én destination tenant</div>
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            ℹ️ &nbsp;Voer dit uit voor <strong>beide</strong> tenants. De App ID die je terugkrijgt gebruik je als <code>ClientId</code> bij de export/import scripts.
+        </div>
+
+        <div class="tenant-grid">
+            <!-- Source -->
+            <div class="tenant-block">
+                <div class="tenant-block-header">
+                    <span class="tenant-badge badge-source">🔵 Source Tenant</span>
+                </div>
+                <div class="form-grid" style="grid-template-columns:1fr; margin-bottom:14px">
+                    <div class="field">
+                        <label>Tenant ID <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="src-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                    </div>
+                    <div class="field">
+                        <label>App naam</label>
+                        <input type="text" id="src-AppName" value="XylosMigration_Source" placeholder="XylosMigration_Source">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline btn-full" id="btn-new-src"
+                        onclick="runPrepare('New_app', 'src', 'btn-new-src')">
+                    <div class="spinner"></div>
+                    <span class="btn-text">▶ App Aanmaken in Source</span>
+                </button>
+                <div class="result-box" id="result-src">
+                    <div class="result-row">
+                        <span class="result-label">App ID</span>
+                        <span class="result-value" id="result-src-appid">—</span>
+                        <button type="button" class="copy-btn" onclick="copyVal('result-src-appid')">Kopieer</button>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Tenant ID</span>
+                        <span class="result-value" id="result-src-tenantid">—</span>
+                        <button type="button" class="copy-btn" onclick="copyVal('result-src-tenantid')">Kopieer</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Destination -->
+            <div class="tenant-block">
+                <div class="tenant-block-header">
+                    <span class="tenant-badge badge-dest">🟢 Destination Tenant</span>
+                </div>
+                <div class="form-grid" style="grid-template-columns:1fr; margin-bottom:14px">
+                    <div class="field">
+                        <label>Tenant ID <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="dst-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                    </div>
+                    <div class="field">
+                        <label>App naam</label>
+                        <input type="text" id="dst-AppName" value="XylosMigration_Destination" placeholder="XylosMigration_Destination">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline btn-full" id="btn-new-dst"
+                        onclick="runPrepare('New_app', 'dst', 'btn-new-dst')">
+                    <div class="spinner"></div>
+                    <span class="btn-text">▶ App Aanmaken in Destination</span>
+                </button>
+                <div class="result-box" id="result-dst">
+                    <div class="result-row">
+                        <span class="result-label">App ID</span>
+                        <span class="result-value" id="result-dst-appid">—</span>
+                        <button type="button" class="copy-btn" onclick="copyVal('result-dst-appid')">Kopieer</button>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Tenant ID</span>
+                        <span class="result-value" id="result-dst-tenantid">—</span>
+                        <button type="button" class="copy-btn" onclick="copyVal('result-dst-tenantid')">Kopieer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STAP 3: Permissies toekennen -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon" style="background:#dcfce7">🔐</div>
+            <div>
+                <div class="card-title">Stap 3 — API Permissies Toekennen</div>
+                <div class="card-subtitle">Voeg Graph API-rechten toe en verleen automatisch Admin Consent</div>
+            </div>
+        </div>
+
+        <div class="alert alert-info" style="flex-direction:column; align-items:flex-start; gap:8px">
+            <div>ℹ️ &nbsp;Dit script voegt de volgende Graph API permissies toe en verleent meteen <strong>Admin Consent</strong>:</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:2px">
+                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">DeviceManagementScripts.ReadWrite.All</code>
+                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">DeviceManagementApps.Read.All</code>
+                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">DeviceManagementConfiguration.ReadWrite.All</code>
+                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">DeviceManagementApps.ReadWrite.All</code>
+                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">Policy.ReadWrite.ConditionalAccess</code>
+            </div>
+        </div>
+
+        <div class="tenant-grid">
+            <div class="tenant-block">
+                <div class="tenant-block-header">
+                    <span class="tenant-badge badge-source">🔵 Source Tenant — Permissies</span>
+                </div>
+                <div class="form-grid" style="grid-template-columns:1fr; margin-bottom:14px">
+                    <div class="field">
+                        <label>Tenant ID <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="permsrc-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        <span class="input-hint">Zelfde als Stap 1 — of kopieer van resultaat hierboven</span>
+                    </div>
+                    <div class="field">
+                        <label>App naam</label>
+                        <input type="text" id="permsrc-AppName" value="XylosMigration_Source" placeholder="XylosMigration_Source">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-full" id="btn-perm-src"
+                        onclick="runPrepare('Policies_To_app', 'permsrc', 'btn-perm-src')">
+                    <div class="spinner"></div>
+                    <span class="btn-text">🔐 Permissies Toekennen — Source</span>
+                </button>
+            </div>
+
+            <div class="tenant-block">
+                <div class="tenant-block-header">
+                    <span class="tenant-badge badge-dest">🟢 Destination Tenant — Permissies</span>
+                </div>
+                <div class="form-grid" style="grid-template-columns:1fr; margin-bottom:14px">
+                    <div class="field">
+                        <label>Tenant ID <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="permdst-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        <span class="input-hint">Zelfde als Stap 2 — of kopieer van resultaat hierboven</span>
+                    </div>
+                    <div class="field">
+                        <label>App naam</label>
+                        <input type="text" id="permdst-AppName" value="XylosMigration_Destination" placeholder="XylosMigration_Destination">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-full" id="btn-perm-dst"
+                        onclick="runPrepare('Policies_To_app', 'permdst', 'btn-perm-dst')">
+                    <div class="spinner"></div>
+                    <span class="btn-text">🔐 Permissies Toekennen — Destination</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="alert alert-warning" style="margin-top:4px;margin-bottom:0">
+            ⚠️ &nbsp;Authenticatie verloopt via een <strong>interactieve browser-popup</strong>. Je moet Global Admin zijn in de betreffende tenant om Admin Consent te verlenen.
+        </div>
+    </div>
+
+    <!-- Console -->
+    <div class="console-wrap">
+        <div class="console-header">
+            <div class="console-header-left">
+                <div class="console-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+                <span class="console-title" id="console-title">PowerShell Output</span>
+            </div>
+            <button type="button" class="console-clear" onclick="consoleClear()">Wissen</button>
+        </div>
+        <div class="console-body" id="output">Wachten op script-uitvoer...</div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+async function runPrepare(scriptName, prefix, btnId) {
+    const tenantId = document.getElementById(`${prefix}-TenantId`)?.value.trim();
+    const appName  = document.getElementById(`${prefix}-AppName`)?.value.trim();
+
+    if (!tenantId) {
+        consolePrint(`\n[FOUT] Vul het Tenant ID in.`, 'err');
+        return;
+    }
+
+    const btn = document.getElementById(btnId);
+    btn.classList.add('running');
+    btn.disabled = true;
+
+    document.getElementById('console-title').textContent = `PowerShell — ${scriptName}.ps1`;
+    consoleClear();
+    consolePrint(`> Script: ${scriptName}.ps1`, 'info');
+    consolePrint(`> Tenant: ${tenantId}`, 'info');
+    if (appName) consolePrint(`> App naam: ${appName}`, 'info');
+
+    try {
+        const res = await fetch(`http://localhost:3000/api/run/utils/${scriptName}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                CustomerTenantId: tenantId,
+                AppName: appName || 'XylosMigration_App'
+            })
+        });
+
+        const text = await res.text();
+
+        if (!res.ok) {
+            consolePrint(`\n[FOUT] Server status ${res.status}`, 'err');
+            consoleWriteLines(text);
+        } else {
+            consoleWriteLines(text);
+            consolePrint(`\n> Klaar.`, 'ok');
+
+            // Probeer App ID uit output te halen
+            const match = text.match(/App is gemaakt met ID=\s*([a-f0-9-]{36})/i);
+            if (match && (prefix === 'src' || prefix === 'dst')) {
+                const appId = match[1].trim();
+                document.getElementById(`result-${prefix}-appid`).textContent = appId;
+                document.getElementById(`result-${prefix}-tenantid`).textContent = tenantId;
+                document.getElementById(`result-${prefix}`).classList.add('visible');
+
+                // Auto-fill permissies veld
+                const permPrefix = prefix === 'src' ? 'permsrc' : 'permdst';
+                const permField = document.getElementById(`${permPrefix}-TenantId`);
+                if (permField && !permField.value.trim()) permField.value = tenantId;
+
+                markFlowDone(prefix === 'src' ? 1 : 2);
+            }
+            if (scriptName === 'Policies_To_app') {
+                markFlowDone(3);
+            }
+        }
+    } catch (err) {
+        consolePrint(`\n[NETWERK FOUT] Kan Migration Engine niet bereiken.`, 'err');
+        consolePrint(`Controleer of 'node server.js' draait op poort 3000.`, 'warn');
+        consolePrint(`Details: ${err.message}`, 'err');
+    } finally {
+        btn.classList.remove('running');
+        btn.disabled = false;
+    }
+}
+
+function markFlowDone(n) {
+    const el = document.getElementById(`flow-${n}`);
+    if (el) el.classList.add('done');
+}
+
+function copyVal(id) {
+    const val = document.getElementById(id)?.textContent;
+    if (val && val !== '—') {
+        navigator.clipboard.writeText(val).then(() => {
+            consolePrint(`> Gekopieerd: ${val}`, 'ok');
+        });
+    }
+}
+</script>
+</body>
+</html>

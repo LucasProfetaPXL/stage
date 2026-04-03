@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Xylos Migration Engine</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="nav-placeholder"></div>
+
+<div class="status-bar">
+    <div class="status-indicator">
+        <span class="status-dot"></span>
+        Migration Engine actief — poort 3000
+    </div>
+    <span id="current-time"></span>
+</div>
+
+<div class="page">
+    <div class="page-header">
+        <div class="breadcrumb">Xylos Migration Engine</div>
+        <h1>Migration Dashboard</h1>
+        <p>Centrale beheeromgeving voor Microsoft 365 tenant-migraties. Volg de stappen hieronder voor een volledige migratie.</p>
+    </div>
+
+    <div class="dash-grid">
+        <a href="prepare.html" class="dash-card c-blue">
+            <div class="dash-card-icon">⚙️</div>
+            <div class="dash-card-step">Stap 1</div>
+            <h3>Prepare Environment</h3>
+            <p>Maak de initiële app-registraties en service principals aan in de doelomgeving.</p>
+            <span class="dash-card-link">Naar Prepare →</span>
+        </a>
+
+        <a href="group-migration.html" class="dash-card c-blue" style="border-top-color: var(--navy-light);">
+            <div class="dash-card-icon">👥</div>
+            <div class="dash-card-step">Stap 2a</div>
+            <h3>Group Migration</h3>
+            <p>Migreer Entra ID groepen en genereer de ID-mapping voor automatische assignments.</p>
+            <span class="dash-card-link" style="color: var(--navy-light);">Naar Groups →</span>
+        </a>
+
+        <a href="full-migration.html" class="dash-card c-green">
+            <div class="dash-card-icon">🚀</div>
+            <div class="dash-card-step">Stap 2b</div>
+            <h3>Full Migration</h3>
+            <p>Start de geautomatiseerde flow voor alle geselecteerde policy categorieën.</p>
+            <span class="dash-card-link">Naar Full Migration →</span>
+        </a>
+
+        <a href="policy-migration.html" class="dash-card c-red">
+            <div class="dash-card-icon">🛡️</div>
+            <div class="dash-card-step">Stap 3</div>
+            <h3>Policy Migration</h3>
+            <p>Beheer individuele export, fix en import acties per policy-type.</p>
+            <span class="dash-card-link">Naar Policy Migration →</span>
+        </a>
+
+        <a href="app-migration.html" class="dash-card c-blue" style="border-top-color:#0891b2">
+            <div class="dash-card-icon">🔗</div>
+            <div class="dash-card-step">Stap 4 (Under Construction)</div>
+            <h3>App Migration</h3>
+            <p>Migreer specifieke Enterprise Apps en hun bijbehorende permissies.</p>
+            <span class="dash-card-link" style="color:#0891b2">Naar App Migration →</span>
+        </a>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+        <div class="card-header">
+            <div class="card-icon gray">📋</div>
+            <div>
+                <div class="card-title">Systeem Status</div>
+                <div class="card-subtitle">Node.js bridge en PowerShell-verbinding</div>
+            </div>
+        </div>
+        <div class="alert alert-info">
+            ℹ️ &nbsp;Zorg dat de Migration Engine actief is via <strong>npm start</strong> voordat je scripts uitvoert.
+        </div>
+        <div class="console-wrap">
+            <div class="console-header">
+                <div class="console-header-left">
+                    <div class="console-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+                    <span class="console-title">Systeem Log</span>
+                </div>
+            </div>
+            <div class="console-body" id="output">Systeem gereed. Selecteer een module om te starten.</div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+    function updateTime() {
+        const t = document.getElementById('current-time');
+        if (t) {
+            t.textContent = new Date().toLocaleTimeString('nl-BE', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
+</script>
+</body>
+</html>

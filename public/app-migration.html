@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Migration | Xylos Migration Engine</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="nav-placeholder"></div>
+
+<div class="page">
+    <div class="page-header">
+        <div class="breadcrumb"><a href="index.html">Dashboard</a> / Migratie / App Migration</div>
+        <h1>App Migration</h1>
+        <p>Migreer specifieke applicaties en hun permissies afzonderlijk naar de doelomgeving.</p>
+    </div>
+
+    <!-- Tenant Credentials -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon blue">🔑</div>
+            <div>
+                <div class="card-title">Tenant Credentials</div>
+                <div class="card-subtitle">Verbindingsgegevens voor de doeltenant</div>
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="field">
+                <label>Tenant ID</label>
+                <input type="text" id="TenantID" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+            <div class="field">
+                <label>App ID (Client ID)</label>
+                <input type="text" id="AppID" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+            <div class="field">
+                <label>App Secret</label>
+                <input type="password" id="AppSecret" placeholder="••••••••••••••••">
+            </div>
+            <div class="field">
+                <label>Assigned User (UPN)</label>
+                <input type="text" id="AssignedUser" placeholder="user@tenant.com">
+            </div>
+        </div>
+    </div>
+
+    <!-- App Parameters -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon blue" style="background:#e0f0fa">📦</div>
+            <div>
+                <div class="card-title">Applicatie Parameters</div>
+                <div class="card-subtitle">Specificeer welke applicatie gemigreerd moet worden</div>
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="field">
+                <label>App Display Name</label>
+                <input type="text" id="AppName" placeholder="Naam van de applicatie">
+                <span class="input-hint">De weergavenaam van de app in Azure AD</span>
+            </div>
+            <div class="field">
+                <label>App Object ID (optioneel)</label>
+                <input type="text" id="AppObjectID" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                <span class="input-hint">Laat leeg om op naam te zoeken</span>
+            </div>
+            <div class="field">
+                <label>Include Permissions</label>
+                <input type="text" id="IncludePerms" placeholder="Yes / No">
+                <span class="input-hint">Ook API-permissies meemigreren?</span>
+            </div>
+            <div class="field">
+                <label>Group ID</label>
+                <input type="text" id="GroupID" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                <span class="input-hint">Doelgroep voor app-toewijzing</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" data-script="MigrateApps" onclick="runScript('MigrateApps')">
+            <div class="spinner"></div>
+            <span class="btn-text">▶ Migreer Applicatie</span>
+        </button>
+    </div>
+
+    <!-- Console -->
+    <div class="console-wrap">
+        <div class="console-header">
+            <div class="console-header-left">
+                <div class="console-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+                <span class="console-title">PowerShell Output — MigrateApps.ps1</span>
+            </div>
+            <button class="console-clear" onclick="consoleClear()">Wissen</button>
+        </div>
+        <div class="console-body" id="output">Wachten op app migratie-uitvoer...</div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

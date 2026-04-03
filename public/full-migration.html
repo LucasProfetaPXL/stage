@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Policy Migration | Xylos Migration Engine</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+.cat-select-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.cat-select-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    border: 1.5px solid var(--gray-border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all .15s;
+    user-select: none;
+}
+.cat-select-item:hover { border-color: var(--navy); background: var(--off-white); }
+.cat-select-item.selected { border-color: var(--navy); background: rgba(30,45,90,0.04); }
+.cat-select-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--navy); flex-shrink: 0; cursor: pointer; }
+.cat-select-icon { font-size: 18px; flex-shrink: 0; }
+.cat-select-label { font-size: 12.5px; font-weight: 600; color: var(--navy); }
+.cat-select-sub   { font-size: 10.5px; color: var(--gray-text); margin-top: 1px; }
+
+.migration-progress { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.progress-cat {
+    background: var(--white);
+    border: 1px solid var(--gray-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color .2s;
+}
+.progress-cat.active  { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,45,90,0.08); }
+.progress-cat.done    { border-color: var(--lime-dark); }
+.progress-cat.error   { border-color: var(--red); }
+.progress-cat-header  { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.progress-cat-icon    { font-size: 18px; flex-shrink: 0; }
+.progress-cat-name    { font-size: 13px; font-weight: 700; color: var(--navy); flex: 1; }
+.progress-cat-status  { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; padding: 3px 10px; border-radius: 99px; flex-shrink: 0; }
+.status-pending  { background: var(--off-white); color: var(--gray-text); }
+.status-running  { background: rgba(30,45,90,0.1); color: var(--navy); animation: pulse 1.5s infinite; }
+.status-done     { background: var(--lime-glow); color: var(--lime-dark); }
+.status-error    { background: #fde8e8; color: var(--red); }
+.status-skipped  { background: var(--off-white); color: var(--gray-text); }
+
+.progress-steps { display: flex; gap: 6px; padding: 0 16px 12px; flex-wrap: wrap; }
+.step-pill {
+    display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border-radius: 99px; font-size: 10.5px; font-weight: 600;
+    background: var(--off-white); color: var(--gray-text); border: 1px solid var(--gray-border); transition: all .2s;
+}
+.step-pill.running { background: rgba(30,45,90,0.08); color: var(--navy); border-color: var(--navy); }
+.step-pill.done    { background: var(--lime-glow); color: var(--lime-dark); border-color: var(--lime-dark); }
+.step-pill.error   { background: #fde8e8; color: var(--red); border-color: var(--red); }
+.step-pill-dot     { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+.overall-bar-wrap { background: var(--gray-border); border-radius: 99px; height: 6px; overflow: hidden; margin-bottom: 8px; }
+.overall-bar      { height: 100%; background: var(--lime); border-radius: 99px; transition: width .5s ease; width: 0%; }
+.overall-label    { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--gray-text); margin-bottom: 16px; }
+.overall-label span:last-child { color: var(--navy); }
+
+.select-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.btn-toggle-all {
+    background: none; border: 1.5px solid var(--navy); border-radius: var(--radius);
+    padding: 5px 14px; font-family: inherit; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.7px; color: var(--navy); cursor: pointer; transition: all .15s;
+}
+.btn-toggle-all:hover { background: var(--off-white); }
+
+
+.line-ok      { color: #3fb950 !important; }
+.line-err     { color: #ff7b72 !important; }
+.line-info    { color: #58a6ff !important; }
+.line-warn    { color: #d29922 !important; }
+.line-default { color: #8b949e !important; }
+
+@media (max-width: 768px) { .cat-select-grid { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+
+<div id="nav-placeholder"></div>
+
+<div class="page">
+    <div class="page-header">
+        <div class="breadcrumb"><a href="index.html">Dashboard</a> / Migratie / Full Policy Migration</div>
+        <h1>Full Policy Migration</h1>
+        <p>Migreer alle geselecteerde policy-types in één keer. Export &rarr; Fix JSON &rarr; Import wordt automatisch per categorie uitgevoerd.</p>
+    </div>
+
+    <!-- CREDENTIALS -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon blue">&#128273;</div>
+            <div><div class="card-title">Credentials</div><div class="card-subtitle">Bron- en doeltenant</div></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gray-text);margin-bottom:10px;">&#x1F535; Brontenant (Export)</div>
+                <div class="form-grid" style="grid-template-columns:1fr; gap:10px; margin-bottom:0">
+                    <div class="field"><label>Tenant ID <span style="color:var(--red)">*</span></label><input type="text" id="src-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+                    <div class="field"><label>Client ID <span style="color:var(--red)">*</span></label><input type="text" id="src-ClientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+                    <div class="field"><label>Client Secret <span style="color:var(--red)">*</span></label><input type="password" id="src-ClientSecret" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>
+                </div>
+                <div class="alert alert-info" style="margin-top:10px;margin-bottom:0;font-size:11px">&#x2139;&#xFE0F; Export via client credentials &mdash; geen browser popup nodig.</div>
+            </div>
+            <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gray-text);margin-bottom:10px;">&#x1F7E2; Doeltenant (Import)</div>
+                <div class="form-grid" style="grid-template-columns:1fr; gap:10px; margin-bottom:0">
+                    <div class="field"><label>Tenant ID <span style="color:var(--red)">*</span></label><input type="text" id="dst-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+                    <div class="field"><label>Client ID <span style="color:var(--red)">*</span></label><input type="text" id="dst-ClientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+                    <div class="field"><label>Client Secret <span style="color:var(--red)">*</span></label><input type="password" id="dst-ClientSecret" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CATEGORY SELECTION -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon blue">&#128203;</div>
+            <div><div class="card-title">Categorie&euml;n</div><div class="card-subtitle">Selecteer welke policy-types gemigreerd moeten worden</div></div>
+        </div>
+        <div class="select-bar">
+            <button type="button" class="btn-toggle-all" onclick="toggleAllCats()">&#9745; Alles selecteren</button>
+            <span style="font-size:12px;color:var(--gray-text)"><strong id="selected-cat-count">0</strong> categorie&euml;n geselecteerd</span>
+        </div>
+        <div class="cat-select-grid" id="cat-select-grid">
+            <label class="cat-select-item selected" data-cat="ca"><input type="checkbox" value="ca" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128737;&#65039;</span><div><div class="cat-select-label">Conditional Access</div><div class="cat-select-sub">CA policies</div></div></label>
+            <label class="cat-select-item selected" data-cat="av"><input type="checkbox" value="av" checked onchange="updateCatCount()"><span class="cat-select-icon">&#129440;</span><div><div class="cat-select-label">Antivirus</div><div class="cat-select-sub">Defender policies</div></div></label>
+            <label class="cat-select-item selected" data-cat="epm"><input type="checkbox" value="epm" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128272;</span><div><div class="cat-select-label">EPM</div><div class="cat-select-sub">Endpoint Privilege Management</div></div></label>
+            <label class="cat-select-item selected" data-cat="comp"><input type="checkbox" value="comp" checked onchange="updateCatCount()"><span class="cat-select-icon">&#9989;</span><div><div class="cat-select-label">Compliance</div><div class="cat-select-sub">Compliance policies</div></div></label>
+            <label class="cat-select-item selected" data-cat="ap"><input type="checkbox" value="ap" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128241;</span><div><div class="cat-select-label">App Protection</div><div class="cat-select-sub">MAM policies</div></div></label>
+            <label class="cat-select-item selected" data-cat="sb"><input type="checkbox" value="sb" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128274;</span><div><div class="cat-select-label">Security Baseline</div><div class="cat-select-sub">Security baselines</div></div></label>
+            <label class="cat-select-item selected" data-cat="sc"><input type="checkbox" value="sc" checked onchange="updateCatCount()"><span class="cat-select-icon">&#9881;&#65039;</span><div><div class="cat-select-label">Settings Catalog</div><div class="cat-select-sub">Configuration policies</div></div></label>
+            <label class="cat-select-item selected" data-cat="dc"><input type="checkbox" value="dc" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128187;</span><div><div class="cat-select-label">Device Config</div><div class="cat-select-sub">Device configurations</div></div></label>
+            <label class="cat-select-item selected" data-cat="ps"><input type="checkbox" value="ps" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128220;</span><div><div class="cat-select-label">PowerShell Scripts</div><div class="cat-select-sub">Scripts + Remediations</div></div></label>
+        </div>
+        <div class="alert alert-warning" style="margin-bottom:0">&#9888;&#65039; &nbsp;Policies worden aangemaakt met status <strong>disabled</strong>. Schakel ze handmatig in na verificatie.</div>
+    </div>
+
+    <!-- START BUTTON -->
+    <button type="button" class="btn btn-danger btn-full" id="btn-start" onclick="startFullMigration()" style="height:52px;font-size:13px;margin-bottom:24px">
+        <div class="spinner"></div>
+        <span class="btn-text">&#128640; Start Full Policy Migration</span>
+    </button>
+
+    <!-- PROGRESS -->
+    <div id="progress-section" style="display:none">
+        <div class="card" style="padding:20px 24px">
+            <div class="overall-bar-wrap"><div class="overall-bar" id="overall-bar"></div></div>
+            <div class="overall-label">
+                <span id="overall-status-text">Bezig...</span>
+                <span id="overall-pct">0%</span>
+            </div>
+            <div class="migration-progress" id="migration-progress"></div>
+        </div>
+    </div>
+
+    <!-- CONSOLE -->
+    <div class="console-wrap">
+        <div class="console-header">
+            <div class="console-header-left">
+                <div class="console-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+                <span class="console-title" id="console-title">PowerShell Output</span>
+            </div>
+            <button type="button" class="console-clear" onclick="consoleClear()">Wissen</button>
+        </div>
+        <div class="console-body" id="output">Console gereed &mdash; klik Start om de migratie te starten...</div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+function consolePrint(text) {
+    const c = document.getElementById('output');
+    if (!c) return;
+    const t = text.trim();
+    if (!t) return;
+    const d = document.createElement('div');
+    const raw = t.toLowerCase();
+    if (raw.includes('[ok]') || raw.includes('succes') || raw.includes('klaar!') || raw.includes('verbonden'))
+        d.className = 'line-ok';
+    else if (raw.includes('[fout]') || raw.includes('error') || raw.includes('failed'))
+        d.className = 'line-err';
+    else if (raw.includes('[warn') || raw.includes('skip'))
+        d.className = 'line-warn';
+    else if (t.startsWith('>') || raw.includes('[info]'))
+        d.className = 'line-info';
+    else
+        d.className = 'line-default';
+    d.textContent = t;
+    c.appendChild(d);
+    while (c.children.length > 600) c.removeChild(c.firstChild);
+    c.scrollTop = c.scrollHeight;
+}
+
+function consoleClear() {
+    const c = document.getElementById('output');
+    if (c) c.innerHTML = '<div class="line-info">> Console gereed...</div>';
+}
+
+const CATS = {
+    ca:   { label:'Conditional Access', icon:'&#128737;&#65039;', export:'export/Export_conditional_access',  fix:'fix_json/fix_json_conditional_access', import:'import/import_conditional_access'  },
+    av:   { label:'Antivirus',          icon:'&#129440;',         export:'export/Export_antivirus',           fix:'fix_json/fix_json_antiVirus',          import:'import/import_antivirus'           },
+    epm:  { label:'EPM',                icon:'&#128272;',         export:'export/Export_epm',                 fix:'fix_json/fix_json_epm',                import:'import/import_epm'                 },
+    comp: { label:'Compliance',         icon:'&#9989;',           export:'export/Export_compliance',          fix:'fix_json/fix_json_compliance',         import:'import/import_compliance'          },
+    ap:   { label:'App Protection',     icon:'&#128241;',         export:'export/Export_app_protection',      fix:'fix_json/fix_json_appprotection',      import:'import/import_app_protection'      },
+    sb:   { label:'Security Baseline',  icon:'&#128274;',         export:'export/Export_security_baseline',   fix:'fix_json/fix_json_securityBaseline',   import:'import/import_security_baseline'   },
+    sc:   { label:'Settings Catalog',   icon:'&#9881;&#65039;',   export:'export/Export_settings_catalog',    fix:'fix_json/fix_json_settingsCatalog',    import:'import/import_settings_catalog'    },
+    dc:   { label:'Device Config',      icon:'&#128187;',         export:'export/Export_device_config',       fix:'fix_json/fix_json_device_config',      import:'import/import_device_config'       },
+    ps:   { label:'PowerShell Scripts', icon:'&#128220;',         export:'export/Export_powershell_scripts',  fix:'fix_json/fix_json_powershell_scripts', import:'import/import_powershell_scripts'  },
+};
+
+function updateCatCount() {
+    const n = document.querySelectorAll('.cat-select-item input:checked').length;
+    document.getElementById('selected-cat-count').textContent = n;
+    document.querySelectorAll('.cat-select-item').forEach(el => {
+        el.classList.toggle('selected', el.querySelector('input').checked);
+    });
+}
+
+function toggleAllCats() {
+    const boxes = document.querySelectorAll('.cat-select-item input');
+    const allChecked = [...boxes].every(b => b.checked);
+    boxes.forEach(b => b.checked = !allChecked);
+    updateCatCount();
+}
+
+updateCatCount();
+
+function buildProgressUI(selectedCats) {
+    const container = document.getElementById('migration-progress');
+    container.innerHTML = '';
+    selectedCats.forEach(catId => {
+        const cat = CATS[catId];
+        const div = document.createElement('div');
+        div.className = 'progress-cat';
+        div.id = `prog-${catId}`;
+        div.innerHTML = `
+            <div class="progress-cat-header">
+                <span class="progress-cat-icon">${cat.icon}</span>
+                <span class="progress-cat-name">${cat.label}</span>
+                <span class="progress-cat-status status-pending" id="status-${catId}">Wachten</span>
+            </div>
+            <div class="progress-steps" id="steps-${catId}">
+                <div class="step-pill" id="pill-${catId}-export"><span class="step-pill-dot"></span>Export</div>
+                <div class="step-pill" id="pill-${catId}-fix"><span class="step-pill-dot"></span>Fix JSON</div>
+                <div class="step-pill" id="pill-${catId}-import"><span class="step-pill-dot"></span>Import</div>
+            </div>`;
+        container.appendChild(div);
+    });
+}
+
+function setCatStatus(catId, status) {
+    const el = document.getElementById(`prog-${catId}`);
+    const badge = document.getElementById(`status-${catId}`);
+    if (!el || !badge) return;
+    el.className = `progress-cat ${status}`;
+    const labels  = { pending:'Wachten', running:'Bezig...', done:'Klaar &#10003;', error:'Fout &#10007;' };
+    const classes = { pending:'status-pending', running:'status-running', done:'status-done', error:'status-error' };
+    badge.className = `progress-cat-status ${classes[status]}`;
+    badge.innerHTML = labels[status];
+}
+
+function setPillStatus(catId, step, status) {
+    const pill = document.getElementById(`pill-${catId}-${step}`);
+    if (pill) pill.className = `step-pill ${status}`;
+}
+
+function updateOverallProgress(done, total) {
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('overall-bar').style.width = pct + '%';
+    document.getElementById('overall-pct').textContent = pct + '%';
+}
+
+async function runMigrationScript(scriptPath, payload) {
+    const res = await fetch(`http://localhost:3000/api/run/${scriptPath}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+        consolePrint(`[FOUT] Server status ${res.status}`);
+        return false;
+    }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '', hasError = false;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        lines.forEach(l => {
+            if (l.trim()) {
+                consolePrint(l);
+                if (l.toLowerCase().includes('[fout]') || l.toLowerCase().includes('error')) hasError = true;
+            }
+        });
+    }
+    if (buf.trim()) consolePrint(buf);
+    return !hasError;
+}
+
+async function startFullMigration() {
+    const srcTenantId = document.getElementById('src-TenantId').value.trim();
+    const srcClientId = document.getElementById('src-ClientId').value.trim();
+    const srcSecret   = document.getElementById('src-ClientSecret').value.trim();
+    const dstTenantId = document.getElementById('dst-TenantId').value.trim();
+    const dstClientId = document.getElementById('dst-ClientId').value.trim();
+    const dstSecret   = document.getElementById('dst-ClientSecret').value.trim();
+
+    if (!srcTenantId || !srcClientId || !srcSecret || !dstTenantId || !dstClientId || !dstSecret) {
+        alert('Vul alle credentials in voor je start.'); return;
+    }
+
+    const selectedCats = [...document.querySelectorAll('.cat-select-item input:checked')].map(b => b.value);
+    if (selectedCats.length === 0) { alert('Selecteer minstens &#233;&#233;n categorie.'); return; }
+
+    const btn = document.getElementById('btn-start');
+    btn.classList.add('running');
+    btn.disabled = true;
+
+    document.getElementById('progress-section').style.display = 'block';
+    buildProgressUI(selectedCats);
+    consoleClear();
+    document.getElementById('progress-section').scrollIntoView({ behavior: 'smooth' });
+
+    const totalSteps = selectedCats.length * 3;
+    let doneSteps = 0;
+
+    document.getElementById('overall-status-text').textContent = `Migratie gestart — ${selectedCats.length} categorieën`;
+
+    for (const catId of selectedCats) {
+        const cat = CATS[catId];
+        setCatStatus(catId, 'running');
+
+        consolePrint(`> ── ${cat.label.toUpperCase()} ──`);
+
+        // EXPORT
+        setPillStatus(catId, 'export', 'running');
+        consolePrint(`> Export: ${cat.label}`);
+        const exportOk = await runMigrationScript(cat.export, { TenantId: srcTenantId, ClientId: srcClientId, ClientSecret: srcSecret });
+        setPillStatus(catId, 'export', exportOk ? 'done' : 'error');
+        doneSteps++; updateOverallProgress(doneSteps, totalSteps);
+
+        if (!exportOk) {
+            consolePrint(`[FOUT] Export mislukt — overgeslagen`);
+            setCatStatus(catId, 'error');
+            doneSteps += 2; updateOverallProgress(doneSteps, totalSteps);
+            continue;
+        }
+
+        // FIX JSON
+        setPillStatus(catId, 'fix', 'running');
+        consolePrint(`> Fix JSON: ${cat.label}`);
+        const fixOk = await runMigrationScript(cat.fix, {});
+        setPillStatus(catId, 'fix', fixOk ? 'done' : 'error');
+        doneSteps++; updateOverallProgress(doneSteps, totalSteps);
+
+        if (!fixOk) {
+            consolePrint(`[FOUT] Fix JSON mislukt — import overgeslagen`);
+            setCatStatus(catId, 'error');
+            doneSteps++; updateOverallProgress(doneSteps, totalSteps);
+            continue;
+        }
+
+        // IMPORT
+        setPillStatus(catId, 'import', 'running');
+        consolePrint(`> Import: ${cat.label}`);
+        const importOk = await runMigrationScript(cat.import, { TenantId: dstTenantId, ClientId: dstClientId, ClientSecret: dstSecret, SelectedFiles: '' });
+        setPillStatus(catId, 'import', importOk ? 'done' : 'error');
+        doneSteps++; updateOverallProgress(doneSteps, totalSteps);
+
+        setCatStatus(catId, importOk ? 'done' : 'error');
+    }
+
+    const errors = document.querySelectorAll('.progress-cat.error').length;
+    const done   = document.querySelectorAll('.progress-cat.done').length;
+    document.getElementById('overall-status-text').textContent =
+        errors > 0 ? `Klaar met ${errors} fout(en) — ${done} categorieën succesvol`
+                   : `✓ Alle ${done} categorieën succesvol gemigreerd!`;
+
+    consolePrint(`> ═══ MIGRATIE VOLTOOID ═══`);
+    btn.classList.remove('running');
+    btn.disabled = false;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xylos Migration Engine — Licentie</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap">
+    <style>
+        :root {
+            --navy:       #1e2d5a;
+            --navy-dark:  #141e3e;
+            --navy-mid:   #253570;
+            --lime:       #6dd400;
+            --lime-dark:  #57aa00;
+            --lime-glow:  rgba(109,212,0,0.18);
+            --red:        #e30613;
+            --white:      #ffffff;
+            --off-white:  #f5f6fa;
+            --gray-bg:    #eef0f5;
+            --gray-border:#dde2ec;
+            --gray-text:  #6b7280;
+            --dark-text:  #111827;
+            --shadow:     0 2px 16px rgba(30,45,90,0.10);
+            --shadow-lg:  0 8px 40px rgba(30,45,90,0.22);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--gray-bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background grid pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(30,45,90,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30,45,90,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+
+        /* Lime glow blob */
+        body::after {
+            content: '';
+            position: fixed;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(109,212,0,0.08) 0%, transparent 70%);
+            top: -100px; right: -100px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .gate-wrap {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 520px;
+            animation: fadeUp .5s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── LOGO BAR ── */
+        .logo-bar {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+            justify-content: center;
+        }
+        .logo-x {
+            width: 42px; height: 42px;
+            background: var(--navy);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: 800;
+            color: var(--lime);
+            box-shadow: 0 0 20px rgba(109,212,0,0.3);
+            flex-shrink: 0;
+        }
+        .logo-text { line-height: 1.2; }
+        .logo-name {
+            font-size: 18px; font-weight: 800;
+            color: var(--navy); letter-spacing: -0.3px;
+        }
+        .logo-product {
+            font-size: 10px; font-weight: 600;
+            color: var(--gray-text);
+            text-transform: uppercase; letter-spacing: 1.8px;
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .card-top {
+            background: var(--navy);
+            padding: 32px 36px 28px;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-top::before {
+            content: '';
+            position: absolute;
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(109,212,0,0.12) 0%, transparent 70%);
+            top: -80px; right: -60px;
+        }
+        .card-top-label {
+            font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1.8px;
+            color: var(--lime);
+            margin-bottom: 10px;
+        }
+        .card-top-title {
+            font-size: 22px; font-weight: 800;
+            color: var(--white);
+            letter-spacing: -0.4px;
+            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+        .card-top-sub {
+            font-size: 12.5px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* Lock icon */
+        .lock-icon {
+            position: absolute;
+            top: 28px; right: 36px;
+            width: 48px; height: 48px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+
+        .card-body {
+            padding: 28px 36px 32px;
+        }
+
+        /* ── FEATURES ── */
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 12.5px;
+            color: var(--dark-text);
+        }
+        .feature-dot {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: var(--lime-glow);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+            font-size: 11px;
+        }
+        .feature strong { color: var(--navy); }
+
+        /* ── DIVIDER ── */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--gray-border);
+            margin: 20px 0;
+        }
+
+        /* ── PRICE ── */
+        .price-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .price-label {
+            font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px;
+            color: var(--gray-text);
+        }
+        .price-amount {
+            font-size: 28px; font-weight: 800;
+            color: var(--navy); letter-spacing: -1px;
+        }
+        .price-amount span {
+            font-size: 14px; font-weight: 600;
+            color: var(--gray-text); letter-spacing: 0;
+        }
+
+        /* ── CTA BUTTON ── */
+        .btn-pay {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            height: 52px;
+            background: var(--navy);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all .2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-pay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 40%, rgba(109,212,0,0.12));
+            opacity: 0;
+            transition: opacity .2s;
+        }
+        .btn-pay:hover {
+            background: var(--navy-mid);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(30,45,90,0.35);
+        }
+        .btn-pay:hover::before { opacity: 1; }
+        .btn-pay:active { transform: translateY(0); }
+
+        .btn-icon {
+            width: 28px; height: 28px;
+            background: var(--lime);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        /* ── ALREADY PAID ── */
+        .already-paid {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--gray-text);
+        }
+        .already-paid a {
+            color: var(--navy);
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .already-paid a:hover { text-decoration: underline; }
+
+        /* ── LICENSE KEY FORM ── */
+        .license-form {
+            display: none;
+            margin-top: 16px;
+            animation: fadeUp .25s ease both;
+        }
+        .license-form.visible { display: block; }
+        .license-input-wrap {
+            display: flex;
+            gap: 8px;
+        }
+        .license-input {
+            flex: 1;
+            height: 42px;
+            padding: 0 14px;
+            border: 1.5px solid var(--gray-border);
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: var(--dark-text);
+            background: var(--white);
+            transition: border-color .2s;
+        }
+        .license-input:focus {
+            outline: none;
+            border-color: var(--navy);
+            box-shadow: 0 0 0 3px rgba(30,45,90,0.1);
+        }
+        .license-input.error { border-color: var(--red); }
+        .license-input::placeholder { color: #bbb; letter-spacing: 1px; }
+        .btn-verify {
+            height: 42px;
+            padding: 0 18px;
+            background: var(--navy);
+            color: var(--white);
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            cursor: pointer;
+            transition: background .15s;
+            white-space: nowrap;
+        }
+        .btn-verify:hover { background: var(--navy-mid); }
+        .license-msg {
+            font-size: 11px;
+            margin-top: 8px;
+            font-weight: 600;
+            display: none;
+        }
+        .license-msg.err  { color: var(--red); display: block; }
+        .license-msg.ok   { color: var(--lime-dark); display: block; }
+
+        /* ── STRIPE BADGE ── */
+        .stripe-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 20px;
+            font-size: 10.5px;
+            color: var(--gray-text);
+            font-weight: 500;
+        }
+        .stripe-badge svg { opacity: .5; }
+
+        @media (max-width: 480px) {
+            .card-top, .card-body { padding-left: 24px; padding-right: 24px; }
+            .lock-icon { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="gate-wrap">
+
+    <!-- Logo -->
+    <div class="logo-bar">
+        <div class="logo-x">X</div>
+        <div class="logo-text">
+            <div class="logo-name">Xylos</div>
+            <div class="logo-product">Migration Engine</div>
+        </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card">
+        <div class="card-top">
+            <div class="lock-icon">🔒</div>
+            <div class="card-top-label">Licentie vereist</div>
+            <div class="card-top-title">Eenmalige activatie<br>vereist</div>
+            <div class="card-top-sub">Betaal eenmalig om toegang te krijgen tot alle migratiefuncties.</div>
+        </div>
+
+        <div class="card-body">
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-dot">✓</div>
+                    <div><strong>Volledige tenant-migratie</strong> — gebruikers, groepen en apps</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-dot">✓</div>
+                    <div><strong>Policy Migration</strong> — Conditional Access, Intune, EPM en meer</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-dot">✓</div>
+                    <div><strong>Prepare Environment</strong> — automatische app-registraties met admin consent</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-dot">✓</div>
+                    <div><strong>Lokale installatie</strong> — draait volledig op eigen infrastructuur</div>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="price-row">
+                <div>
+                    <div class="price-label">Eenmalig</div>
+                    <div style="font-size:11px;color:var(--gray-text);margin-top:2px">Geen abonnement</div>
+                </div>
+                <div class="price-amount">€ 499 <span>excl. BTW</span></div>
+            </div>
+
+            <a class="btn-pay" href="https://buy.stripe.com/test_6oUfZi3sWcjSdTv93z97G02" target="_blank">
+                <div class="btn-icon">💳</div>
+                Licentie Activeren via Stripe
+            </a>
+
+            <div class="already-paid">
+                Al betaald? <a onclick="toggleLicenseForm()">Voer je licentiecode in →</a>
+            </div>
+
+            <div class="license-form" id="license-form">
+                <div class="license-input-wrap">
+                    <input type="text" class="license-input" id="license-key"
+                           placeholder="XYLOS-XXXX-XXXX-XXXX"
+                           maxlength="19"
+                           oninput="formatKey(this)">
+                    <button type="button" class="btn-verify" onclick="verifyLicense()">Verifiëren</button>
+                </div>
+                <div class="license-msg" id="license-msg"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stripe-badge">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect width="14" height="14" rx="3" fill="#635BFF"/>
+            <path d="M6.2 5.4c0-.4.3-.5.8-.5.7 0 1.6.2 2.3.6V3.7c-.8-.3-1.5-.4-2.3-.4C5.2 3.3 4 4 4 5.5c0 2.3 3.2 1.9 3.2 2.9 0 .4-.4.6-.9.6-.8 0-1.8-.3-2.6-.8v1.8c.9.4 1.8.5 2.6.5 1.8 0 3-.9 3-2.4C9.3 5.8 6.2 6.3 6.2 5.4z" fill="white"/>
+        </svg>
+        Beveiligde betaling via Stripe
+    </div>
+</div>
+
+<script>
+    // ── LICENTIECODES ─────────────────────────────────────────
+    // Voeg hier geldige codes toe
+    const VALID_LICENSES = [
+        'XYLOS-TEST-1234-ABCD',
+        'XYLOS-PROD-5678-EFGH',
+    ];
+
+    const LICENSE_KEY = 'xylos_license_valid';
+
+    // Check bij laden — als al geactiveerd, stuur door
+    if (sessionStorage.getItem(LICENSE_KEY) === 'true') {
+        window.location.href = 'index.html';
+    }
+
+    function toggleLicenseForm() {
+        const form = document.getElementById('license-form');
+        form.classList.toggle('visible');
+        if (form.classList.contains('visible')) {
+            document.getElementById('license-key').focus();
+        }
+    }
+
+    function formatKey(input) {
+        // Auto-format als XYLOS-XXXX-XXXX-XXXX
+        let val = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const parts = [];
+        const prefix = 'XYLOS';
+        if (val.startsWith(prefix)) {
+            parts.push(prefix);
+            val = val.slice(prefix.length);
+        }
+        while (val.length > 0) {
+            parts.push(val.slice(0, 4));
+            val = val.slice(4);
+        }
+        input.value = parts.join('-').slice(0, 19);
+        input.classList.remove('error');
+        document.getElementById('license-msg').className = 'license-msg';
+    }
+
+    function verifyLicense() {
+        const key = document.getElementById('license-key').value.trim();
+        const msg = document.getElementById('license-msg');
+        const input = document.getElementById('license-key');
+
+        if (!key) {
+            msg.textContent = 'Voer een licentiecode in.';
+            msg.className = 'license-msg err';
+            return;
+        }
+
+        if (VALID_LICENSES.includes(key)) {
+            msg.textContent = '✓ Licentie geldig — doorsturen naar applicatie...';
+            msg.className = 'license-msg ok';
+            sessionStorage.setItem(LICENSE_KEY, 'true');
+            setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+        } else {
+            msg.textContent = 'Ongeldige licentiecode. Controleer je aankoop of neem contact op.';
+            msg.className = 'license-msg err';
+            input.classList.add('error');
+        }
+    }
+
+    // Enter key submit
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && document.getElementById('license-form').classList.contains('visible')) {
+            verifyLicense();
+        }
+    });
+</script>
+</body>
+</html>
