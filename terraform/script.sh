@@ -5,10 +5,14 @@ echo "────────────────────────�
 echo " Xylos Migration Engine — VM Setup"
 echo "──────────────────────────────────────"
 
-# ─── Node.js 18 ───────────────────────────────────────────
+# ─── Node.js 20 ───────────────────────────────────────────
 echo "[1/7] Node.js installeren..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
+
+# ─── Build tools voor native modules ─────────────────────
+echo "[1b] Build tools installeren..."
+sudo apt-get install -y build-essential python3
 
 # ─── Nginx + Certbot ──────────────────────────────────────
 echo "[2/7] Nginx en Certbot installeren..."
@@ -22,7 +26,8 @@ sudo npm install -g pm2
 echo "[4/7] App klonen van GitHub..."
 sudo apt-get install -y git
 sudo mkdir -p /opt/app
-git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
+export GIT_TERMINAL_PROMPT=0
+git clone https://github.com/LucasProfetaP/stage.git /opt/app
 cd /opt/app
 npm install
 
