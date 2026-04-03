@@ -34,6 +34,7 @@ jobs:
           gcloud storage buckets create gs://xylos-terraform-state \
             --location=us-central1 \
             --project=${{ secrets.TF_VAR_PROJECT_ID }}
+          sleep 10
 
       - name: Setup SSH key
         run: |
@@ -59,8 +60,8 @@ jobs:
         run: terraform plan
         env:
           TF_VAR_domain_name: ${{ secrets.TF_VAR_DOMAIN_NAME }}
-          TF_VAR_email: ${{ secrets.TF_VAR_EMAIL }}
-          TF_VAR_project_id: ${{ secrets.TF_VAR_PROJECT_ID }}
+          TF_VAR_email:       ${{ secrets.TF_VAR_EMAIL }}
+          TF_VAR_project_id:  ${{ secrets.TF_VAR_PROJECT_ID }}
 
   terraform-apply:
     name: Terraform Apply
@@ -77,6 +78,9 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - name: Setup GCP SDK
+        uses: google-github-actions/setup-gcloud@v1
+
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -87,28 +91,7 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-      - name: Geef service account toegang tot bucket
-        run: |
-          gcloud projects add-iam-policy-binding ${{ secrets.TF_VAR_PROJECT_ID }} \
-            --member="serviceAccount:xylos-automation@${{ secrets.TF_VAR_PROJECT_ID }}.iam.gserviceaccount.com" \
-            --role="roles/storage.admin"
-          echo "Wachten op IAM propagatie..."
-          sleep 30
 
-      - name: Maak GCS bucket aan als die niet bestaat
-        run: |
-          gcloud storage buckets describe gs://xylos-terraform-state 2>/dev/null || \
-          gcloud storage buckets create gs://xylos-terraform-state \
-            --location=us-central1 \
-            --project=${{ secrets.TF_VAR_PROJECT_ID }}
-          sleep 10
-            - name: Maak GCS bucket aan als die niet bestaat
-              run: |
-                gcloud storage buckets describe gs://xylos-terraform-state 2>/dev/null || \
-                gcloud storage buckets create gs://xylos-terraform-state \
-                  --location=us-central1 \
-                  --project=${{ secrets.TF_VAR_PROJECT_ID }}
-                sleep 5
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
@@ -118,5 +101,5 @@ jobs:
         run: terraform apply -auto-approve
         env:
           TF_VAR_domain_name: ${{ secrets.TF_VAR_DOMAIN_NAME }}
-          TF_VAR_email: ${{ secrets.TF_VAR_EMAIL }}
-          TF_VAR_project_id: ${{ secrets.TF_VAR_PROJECT_ID }}
+          TF_VAR_email:       ${{ secrets.TF_VAR_EMAIL }}
+          TF_VAR_project_id:  ${{ secrets.TF_VAR_PROJECT_ID }}
