@@ -28,14 +28,6 @@ jobs:
       - name: Setup GCP SDK
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Maak GCS bucket aan als die niet bestaat
-        run: |
-          gcloud storage buckets describe gs://xylos-terraform-state 2>/dev/null || \
-          gcloud storage buckets create gs://xylos-terraform-state \
-            --location=us-central1 \
-            --project=${{ secrets.TF_VAR_PROJECT_ID }}
-          sleep 10
-
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -77,9 +69,6 @@ jobs:
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Setup GCP SDK
-        uses: google-github-actions/setup-gcloud@v1
 
       - name: Setup SSH key
         run: |
