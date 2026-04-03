@@ -18,10 +18,12 @@ sudo apt-get install -y nginx certbot python3-certbot-nginx
 echo "[3/7] PM2 installeren..."
 sudo npm install -g pm2
 
-# ─── App bestanden klaarzetten ────────────────────────────
-echo "[4/7] App map aanmaken en dependencies installeren..."
+# ─── App bestanden van GitHub halen ───────────────────────
+echo "[4/7] App klonen van GitHub..."
+sudo apt-get install -y git
 sudo mkdir -p /home/debian/app
 sudo chown -R debian:debian /home/debian/app
+git clone https://github.com/LucasProfetaP/stage.git /home/debian/app
 cd /home/debian/app
 npm install
 
@@ -58,7 +60,6 @@ server {
 }
 EOF
 
-# Standaard Nginx site uitzetten en onze site aanzetten
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -sf /etc/nginx/sites-available/migration_engine /etc/nginx/sites-enabled/
 sudo nginx -t
@@ -72,7 +73,6 @@ sudo certbot --nginx \
   --agree-tos \
   -m ${email}
 
-# Certbot auto-renewal controleren
 sudo systemctl enable certbot.timer
 
 echo ""
