@@ -28,7 +28,7 @@ resource "google_project_iam_member" "sa_editor" {
 }
 
 resource "google_compute_instance" "default" {
-  name = "migration_tool"
+  name = "migration-tool"
   machine_type = "e2-micro"
   zone = "us-central1-a"
   tags = ["automation"]
