@@ -18,8 +18,8 @@ provider "google" {
 }
 
 resource "google_service_account" "default" {
-  account_id = "xylos_automation"
-  display_name = "xylos_automation"
+  account_id = "xylos-automation"
+  display_name = "xylos-automation"
 }
 resource "google_project_iam_member" "sa_editor" {
   project = var.project_id
