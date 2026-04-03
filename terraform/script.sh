@@ -22,7 +22,7 @@ sudo npm install -g pm2
 echo "[4/7] App klonen van GitHub..."
 sudo apt-get install -y git
 sudo mkdir -p /opt/app
-git clone https://github.com/LucasProfetaP/stage.git /opt/app
+git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
 cd /opt/app
 npm install
 
