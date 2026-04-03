@@ -29,7 +29,7 @@ provider "google" {
 
 resource "google_compute_instance" "default" {
   name = "migration-tool"
-  machine_type = "e2-micro"
+  machine_type = "e2-small"
   zone = "us-central1-a"
   tags = ["automation"]
   boot_disk {
