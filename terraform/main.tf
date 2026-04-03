@@ -40,10 +40,6 @@ resource "google_compute_instance" "default" {
       }
     }
   }
-  scratch_disk {
-    interface = "NVME"
-  }
-
   network_interface {
     network = "default"
 
