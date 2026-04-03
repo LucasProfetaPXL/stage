@@ -61,7 +61,7 @@ resource "google_compute_instance" "default" {
   })
 }
 resource "google_compute_address" "static_ip" {
-    name = "migration_tool_ip"
+    name = "migration-tool-ip"
     region = "us-central1"
 }
 resource "google_compute_firewall" "security_rules" {
