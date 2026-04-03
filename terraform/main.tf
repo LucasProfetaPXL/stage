@@ -1,11 +1,35 @@
+provider "google" {
+  project = var.project_id
+  region  = "us-central1"
+  zone    = "us-central1-a"
+}
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+
+  backend "gcs" {
+    bucket = "jouw-terraform-state-bucket"
+    prefix = "migration-tool/state"
+  }
+}
 resource "google_service_account" "default" {
   account_id = "xylos_automation"
   display_name = "xylos_automation"
 }
+resource "google_project_iam_member" "sa_editor" {
+  project = var.project_id
+  role = "roles/editor"
+  member = "serviceAccount:${google_service_account.default.email}"
+}
+
 resource "google_compute_instance" "default" {
   name = "migration_tool"
   machine_type = "e2-micro"
-  zone = "us-central1"
+  zone = "us-central1-a"
   tags = ["automation"]
   boot_disk {
     initialize_params {
