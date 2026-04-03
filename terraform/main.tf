@@ -12,7 +12,7 @@ terraform {
   }
 
   backend "gcs" {
-    bucket = "jouw-terraform-state-bucket"
+    bucket = "jouw-terraform-state"
     prefix = "migration-tool/state"
   }
 }
