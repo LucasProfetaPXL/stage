@@ -21,10 +21,9 @@ sudo npm install -g pm2
 # ─── App bestanden van GitHub halen ───────────────────────
 echo "[4/7] App klonen van GitHub..."
 sudo apt-get install -y git
-sudo mkdir -p /home/debian/app
-sudo chown -R debian:debian /home/debian/app
-git clone https://github.com/LucasProfetaP/stage.git /home/debian/app
-cd /home/debian/app
+sudo mkdir -p /opt/app
+git clone https://github.com/LucasProfetaP/stage.git /opt/app
+cd /opt/app
 npm install
 
 # ─── Session secret genereren ─────────────────────────────
@@ -36,9 +35,9 @@ source /etc/environment
 
 # ─── App starten via PM2 ──────────────────────────────────
 echo "[6/7] App starten via PM2..."
-cd /home/debian/app
+cd /opt/app
 pm2 start server.js --name "migration_engine"
-pm2 startup systemd -u debian --hp /home/debian
+pm2 startup systemd -u root --hp /root
 pm2 save
 
 # ─── Nginx configureren ───────────────────────────────────
