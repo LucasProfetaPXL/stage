@@ -1,9 +1,6 @@
 #!/bin/bash
-set -e
-
-echo "──────────────────────────────────────"
-echo " Xylos Migration Engine — VM Setup"
-echo "──────────────────────────────────────"
+exec > >(tee /var/log/startup.log) 2>&1
+echo "Setup gestart: $(date)"
 
 # ─── Node.js 18 ───────────────────────────────────────────
 echo "[1/7] Node.js installeren..."
@@ -27,7 +24,7 @@ echo "[4/7] App klonen van GitHub..."
 sudo apt-get install -y git
 sudo mkdir -p /opt/app
 export GIT_TERMINAL_PROMPT=0
-git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
+git clone https://github.com/LucasProfetaP/stage.git /opt/app
 cd /opt/app
 npm install
 
@@ -45,8 +42,8 @@ pm2 start server.js --name "migration_engine"
 pm2 startup systemd -u root --hp /root
 pm2 save
 
-# ─── Nginx configureren ───────────────────────────────────
-echo "[7/7] Nginx en SSL configureren..."
+# ─── Nginx configureren (HTTP eerst) ─────────────────────
+echo "[7/7] Nginx configureren..."
 sudo tee /etc/nginx/sites-available/migration_engine > /dev/null <<EOF
 server {
     listen 80;
@@ -67,20 +64,65 @@ EOF
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -sf /etc/nginx/sites-available/migration_engine /etc/nginx/sites-enabled/
 sudo nginx -t
-sudo systemctl restart nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# Wacht tot Nginx volledig draait
+sleep 5
 
 # ─── Let's Encrypt certificaat ────────────────────────────
 echo "[SSL] Certbot certificaat aanvragen voor ${domain_name}..."
-sudo certbot --nginx \
+if sudo certbot --nginx \
   -d ${domain_name} \
   --non-interactive \
   --agree-tos \
-  -m ${email}
+  -m ${email}; then
 
-sudo systemctl enable certbot.timer
+    echo "✅ SSL certificaat succesvol aangemaakt!"
+
+    # ─── Auto-renewal via systemd timer ──────────────────
+    sudo tee /etc/systemd/system/certbot-renew.service > /dev/null <<'CERTBOT_SERVICE'
+[Unit]
+Description=Certbot Renewal
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certbot renew --quiet --deploy-hook "systemctl reload nginx"
+CERTBOT_SERVICE
+
+    sudo tee /etc/systemd/system/certbot-renew.timer > /dev/null <<'CERTBOT_TIMER'
+[Unit]
+Description=Run certbot renewal twice daily
+
+[Timer]
+OnCalendar=*-*-* 00,12:00:00
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+CERTBOT_TIMER
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable certbot-renew.timer
+    sudo systemctl start certbot-renew.timer
+
+    echo "✅ Auto-renewal geconfigureerd!"
+    echo "   App bereikbaar op: https://${domain_name}"
+
+else
+    echo ""
+    echo "⚠️  SSL MISLUKT - app draait op HTTP only."
+    echo ""
+    echo "Meest waarschijnlijke oorzaken:"
+    echo "  1. DNS van ${domain_name} wijst nog niet naar IP: $(curl -s ifconfig.me)"
+    echo "  2. Let's Encrypt rate limit bereikt"
+    echo ""
+    echo "Fix nadien handmatig met:"
+    echo "  sudo certbot --nginx -d ${domain_name} --email ${email}"
+fi
 
 echo ""
-echo "✅ Setup voltooid!"
-echo "   App bereikbaar op: https://${domain_name}"
-echo "   Standaard login:   admin / Admin@Xylos123!"
+echo "✅ Setup voltooid: $(date)"
+echo "   Standaard login: admin / Admin@Xylos123!"
 echo "   ⚠️  Verander het wachtwoord meteen na de eerste login!"
