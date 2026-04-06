@@ -37,6 +37,12 @@ echo "[6/8] App klonen van GitHub..."
 sudo apt-get install -y git
 sudo mkdir -p /opt/app
 GIT_TERMINAL_PROMPT=0 git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
+
+if [ ! -f /opt/app/server.js ]; then
+    echo "❌ Git clone mislukt — server.js niet gevonden!"
+    exit 1
+fi
+
 cd /opt/app
 npm install
 
@@ -139,4 +145,4 @@ touch /var/log/startup_done
 echo ""
 echo "✅ Setup voltooid: $(date)"
 echo "   Standaard login: admin / Admin@Xylos123!"
-echo "   ⚠️  Verander het wachtwoord meteen na de eerste login!"
+echo "   ⚠️  Verander het wachtwoord meteen na de eerste login!"    
