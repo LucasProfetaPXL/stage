@@ -76,7 +76,6 @@
             </div>
         </div>
 
-        <!-- NIEUW: Alleen gebruikte groepen -->
         <div style="background: #f0f7ff; border: 1.5px solid #bfdbfe; border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
             <div style="font-size: 1.6rem;">🎯</div>
             <div style="flex: 1;">
@@ -130,12 +129,12 @@
 <script src="app.js"></script>
 <script>
 async function runMigrateUsedGroups() {
-    const srcTenantId    = document.getElementById('src-TenantId').value.trim();
-    const srcClientId    = document.getElementById('src-ClientId').value.trim();
-    const srcClientSecret= document.getElementById('src-ClientSecret').value.trim();
-    const dstTenantId    = document.getElementById('dst-TenantId').value.trim();
-    const dstClientId    = document.getElementById('dst-ClientId').value.trim();
-    const dstClientSecret= document.getElementById('dst-ClientSecret').value.trim();
+    const srcTenantId     = document.getElementById('src-TenantId').value.trim();
+    const srcClientId     = document.getElementById('src-ClientId').value.trim();
+    const srcClientSecret = document.getElementById('src-ClientSecret').value.trim();
+    const dstTenantId     = document.getElementById('dst-TenantId').value.trim();
+    const dstClientId     = document.getElementById('dst-ClientId').value.trim();
+    const dstClientSecret = document.getElementById('dst-ClientSecret').value.trim();
 
     if (!srcTenantId || !srcClientId || !srcClientSecret || !dstTenantId || !dstClientId || !dstClientSecret) {
         alert('Vul alle credentials in voor bron- en doeltenant.'); return;
@@ -147,7 +146,7 @@ async function runMigrateUsedGroups() {
     consolePrint('> Migreren van gebruikte groepen...', 'info');
 
     try {
-        const res = await fetch('http://localhost:3000/api/run/groups/Migrate_UsedGroups', {
+        const res = await fetch('/api/run/groups/Migrate_UsedGroups', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

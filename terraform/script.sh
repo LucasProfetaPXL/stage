@@ -9,40 +9,46 @@ if [ -f /var/log/startup_done ]; then
 fi
 
 # ─── Node.js 18 ───────────────────────────────────────────
-echo "[1/7] Node.js installeren..."
+echo "[1/8] Node.js installeren..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # ─── Build tools ──────────────────────────────────────────
-echo "[1b] Build tools installeren..."
+echo "[2/8] Build tools installeren..."
 sudo apt-get install -y build-essential python3
 
+# ─── PowerShell ───────────────────────────────────────────
+echo "[3/8] PowerShell installeren..."
+wget -q https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y powershell
+
 # ─── Nginx + Certbot ──────────────────────────────────────
-echo "[2/7] Nginx en Certbot installeren..."
+echo "[4/8] Nginx en Certbot installeren..."
 sudo apt-get install -y nginx certbot python3-certbot-nginx
 
 # ─── PM2 ──────────────────────────────────────────────────
-echo "[3/7] PM2 installeren..."
+echo "[5/8] PM2 installeren..."
 sudo npm install -g pm2
 
 # ─── App bestanden van GitHub halen ───────────────────────
-echo "[4/7] App klonen van GitHub..."
+echo "[6/8] App klonen van GitHub..."
 sudo apt-get install -y git
 sudo mkdir -p /opt/app
 export GIT_TERMINAL_PROMPT=0
-git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
+git clone https://github.com/LucasProfetaP/stage.git /opt/app
 cd /opt/app
 npm install
 
 # ─── Session secret genereren ─────────────────────────────
-echo "[5/7] Session secret instellen..."
+echo "[7/8] Session secret instellen..."
 if ! grep -q "SESSION_SECRET" /etc/environment; then
     echo "SESSION_SECRET=$(openssl rand -hex 32)" | sudo tee -a /etc/environment
 fi
 source /etc/environment
 
 # ─── PM2 startup configureren VOOR app start ─────────────
-echo "[6/7] PM2 startup configureren..."
 pm2 startup systemd -u root --hp /root
 systemctl enable pm2-root
 
@@ -52,7 +58,7 @@ pm2 start server.js --name "migration_engine"
 pm2 save --force
 
 # ─── Nginx configureren (HTTP eerst) ─────────────────────
-echo "[7/7] Nginx configureren..."
+echo "[8/8] Nginx configureren..."
 sudo rm -f /etc/nginx/sites-enabled/default
 
 sudo tee /etc/nginx/sites-available/migration_engine > /dev/null <<EOF
@@ -76,8 +82,6 @@ sudo ln -sf /etc/nginx/sites-available/migration_engine /etc/nginx/sites-enabled
 sudo nginx -t
 sudo systemctl start nginx
 sudo systemctl enable nginx
-
-# Wacht tot Nginx volledig draait
 sleep 5
 
 # ─── Let's Encrypt certificaat ────────────────────────────
@@ -131,3 +135,8 @@ fi
 
 # ─── Markeer setup als klaar ─────────────────────────────
 touch /var/log/startup_done
+
+echo ""
+echo "✅ Setup voltooid: $(date)"
+echo "   Standaard login: admin / Admin@Xylos123!"
+echo "   ⚠️  Verander het wachtwoord meteen na de eerste login!"

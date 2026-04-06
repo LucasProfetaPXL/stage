@@ -37,7 +37,6 @@ function consolePrint(text, type = '') {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    // Sla alleen pure JSON structuurregels over — NIET foutmeldingen
     const isPureJson = (
         trimmed === '{' || trimmed === '}' ||
         trimmed === '[' || trimmed === ']' ||
@@ -64,9 +63,7 @@ function consolePrint(text, type = '') {
     line.textContent = trimmed;
     c.appendChild(line);
 
-    // Max 300 regels — verwijder oudste
     while (c.children.length > 300) c.removeChild(c.firstChild);
-
     c.scrollTop = c.scrollHeight;
 }
 
@@ -93,7 +90,7 @@ async function runScript(scriptName, extraPayload = {}) {
     });
 
     try {
-        const response = await fetch(`http://localhost:3000/api/run/${scriptName}`, {
+        const response = await fetch(`/api/run/${scriptName}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -106,7 +103,6 @@ async function runScript(scriptName, extraPayload = {}) {
             return;
         }
 
-        // ── Streaming: toon output terwijl script nog loopt ──
         const reader  = response.body.getReader();
         const decoder = new TextDecoder();
         let   buffer  = '';
@@ -117,7 +113,7 @@ async function runScript(scriptName, extraPayload = {}) {
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
-            buffer = lines.pop(); // Bewaar onvolledige laatste regel
+            buffer = lines.pop();
 
             lines.forEach(line => { if (line.trim()) consolePrint(line); });
         }
