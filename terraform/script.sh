@@ -44,6 +44,8 @@ pm2 save
 
 # ─── Nginx configureren (HTTP eerst) ─────────────────────
 echo "[7/7] Nginx configureren..."
+sudo rm -f /etc/nginx/sites-enabled/default
+
 sudo tee /etc/nginx/sites-available/migration_engine > /dev/null <<EOF
 server {
     listen 80;
@@ -61,7 +63,6 @@ server {
 }
 EOF
 
-sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -sf /etc/nginx/sites-available/migration_engine /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl start nginx
@@ -80,7 +81,6 @@ if sudo certbot --nginx \
 
     echo "✅ SSL certificaat succesvol aangemaakt!"
 
-    # ─── Auto-renewal via systemd timer ──────────────────
     sudo tee /etc/systemd/system/certbot-renew.service > /dev/null <<'CERTBOT_SERVICE'
 [Unit]
 Description=Certbot Renewal
@@ -106,6 +106,7 @@ CERTBOT_TIMER
     sudo systemctl daemon-reload
     sudo systemctl enable certbot-renew.timer
     sudo systemctl start certbot-renew.timer
+    sudo systemctl reload nginx
 
     echo "✅ Auto-renewal geconfigureerd!"
     echo "   App bereikbaar op: https://${domain_name}"
@@ -113,10 +114,7 @@ CERTBOT_TIMER
 else
     echo ""
     echo "⚠️  SSL MISLUKT - app draait op HTTP only."
-    echo ""
-    echo "Meest waarschijnlijke oorzaken:"
-    echo "  1. DNS van ${domain_name} wijst nog niet naar IP: $(curl -s ifconfig.me)"
-    echo "  2. Let's Encrypt rate limit bereikt"
+    echo "   VM IP: $(curl -s ifconfig.me)"
     echo ""
     echo "Fix nadien handmatig met:"
     echo "  sudo certbot --nginx -d ${domain_name} --email ${email}"
