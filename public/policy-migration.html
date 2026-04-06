@@ -450,7 +450,7 @@ async function runStep(stepType) {
     }
 
     try {
-        const res = await fetch(`http://localhost:3000/api/run/${scriptPath}`, {
+        const res = await fetch(`/api/run/${scriptPath}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
         if (!res.ok) { consolePrint(`\n[FOUT] Server status ${res.status}`, 'err'); consoleWriteLines(await res.text()); return; }
@@ -479,7 +479,7 @@ function activateTab(n) { const el = document.getElementById(`stab-${n}`); if (e
 async function loadJsonFiles() {
     if (loadingFix) return; loadingFix = true;
     try {
-        const res = await fetch(`http://localhost:3000/api/json-files/${activeCat}`);
+        const res = await fetch(`/api/json-files/${activeCat}`);
         const data = await res.json();
         if (data.error) { renderJsonList([], 'json-list', 'json-count', 'json-stats', 'json-empty'); return; }
         if (!data.exists) { renderJsonList([], 'json-list', 'json-count', 'json-stats', 'json-empty'); document.getElementById('json-count').textContent = 'Map niet gevonden'; }
@@ -491,7 +491,7 @@ async function loadJsonFiles() {
 async function loadJsonFilesImport() {
     if (loadingImport) return; loadingImport = true;
     try {
-        const res = await fetch(`http://localhost:3000/api/json-files/${activeCat}`);
+        const res = await fetch(`/api/json-files/${activeCat}`);
         const data = await res.json();
         if (data.error) { renderJsonList([], 'import-json-list', 'import-json-count', 'import-json-stats', 'import-json-empty'); return; }
         renderJsonList(data.files || [], 'import-json-list', 'import-json-count', 'import-json-stats', 'import-json-empty');
