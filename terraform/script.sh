@@ -36,8 +36,7 @@ sudo npm install -g pm2
 echo "[6/8] App klonen van GitHub..."
 sudo apt-get install -y git
 sudo mkdir -p /opt/app
-export GIT_TERMINAL_PROMPT=0
-git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
+GIT_TERMINAL_PROMPT=0 git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
 cd /opt/app
 npm install
 
@@ -49,13 +48,14 @@ fi
 source /etc/environment
 
 # ─── PM2 startup configureren VOOR app start ─────────────
+export HOME=/root
 pm2 startup systemd -u root --hp /root
 systemctl enable pm2-root
 
 # ─── App starten via PM2 ──────────────────────────────────
 cd /opt/app
-pm2 start server.js --name "migration_engine"
-pm2 save --force
+HOME=/root pm2 start server.js --name "migration_engine"
+HOME=/root pm2 save --force
 
 # ─── Nginx configureren (HTTP eerst) ─────────────────────
 echo "[8/8] Nginx configureren..."
