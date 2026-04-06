@@ -2,6 +2,12 @@
 exec > >(tee /var/log/startup.log) 2>&1
 echo "Setup gestart: $(date)"
 
+# ─── Voorkom dat script twee keer uitgevoerd wordt ───────
+if [ -f /var/log/startup_done ]; then
+    echo "Setup al uitgevoerd, script wordt overgeslagen."
+    exit 0
+fi
+
 # ─── Node.js 18 ───────────────────────────────────────────
 echo "[1/7] Node.js installeren..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -24,7 +30,7 @@ echo "[4/7] App klonen van GitHub..."
 sudo apt-get install -y git
 sudo mkdir -p /opt/app
 export GIT_TERMINAL_PROMPT=0
-git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
+git clone https://github.com/LucasProfetaP/stage.git /opt/app
 cd /opt/app
 npm install
 
@@ -41,6 +47,8 @@ cd /opt/app
 pm2 start server.js --name "migration_engine"
 pm2 startup systemd -u root --hp /root
 pm2 save
+sudo systemctl enable pm2-root
+sudo systemctl start pm2-root
 
 # ─── Nginx configureren (HTTP eerst) ─────────────────────
 echo "[7/7] Nginx configureren..."
@@ -119,6 +127,9 @@ else
     echo "Fix nadien handmatig met:"
     echo "  sudo certbot --nginx -d ${domain_name} --email ${email}"
 fi
+
+# ─── Markeer setup als klaar ─────────────────────────────
+touch /var/log/startup_done
 
 echo ""
 echo "✅ Setup voltooid: $(date)"
