@@ -41,14 +41,15 @@ if ! grep -q "SESSION_SECRET" /etc/environment; then
 fi
 source /etc/environment
 
+# ─── PM2 startup configureren VOOR app start ─────────────
+echo "[6/7] PM2 startup configureren..."
+pm2 startup systemd -u root --hp /root
+systemctl enable pm2-root
+
 # ─── App starten via PM2 ──────────────────────────────────
-echo "[6/7] App starten via PM2..."
 cd /opt/app
 pm2 start server.js --name "migration_engine"
-pm2 startup systemd -u root --hp /root
-pm2 save
-sudo systemctl enable pm2-root
-sudo systemctl start pm2-root
+pm2 save --force
 
 # ─── Nginx configureren (HTTP eerst) ─────────────────────
 echo "[7/7] Nginx configureren..."
@@ -130,8 +131,3 @@ fi
 
 # ─── Markeer setup als klaar ─────────────────────────────
 touch /var/log/startup_done
-
-echo ""
-echo "✅ Setup voltooid: $(date)"
-echo "   Standaard login: admin / Admin@Xylos123!"
-echo "   ⚠️  Verander het wachtwoord meteen na de eerste login!"
