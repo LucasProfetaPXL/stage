@@ -25,7 +25,7 @@ sudo apt-get update
 sudo apt-get install -y powershell
 
 # ─── PowerShell modules installeren ──────────────────────
-echo "[3b/8] PowerShell modules installeren..."
+echo "[3b/8] PowerShell Graph modules installeren..."
 pwsh -NonInteractive -Command "
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     Install-Module -Name Microsoft.Graph.Authentication -Force -Scope AllUsers
@@ -95,7 +95,7 @@ cd /opt/app
 HOME=/root pm2 start server.js --name "migration_engine"
 HOME=/root pm2 save --force
 
-# ─── Nginx configureren (HTTP eerst) ─────────────────────
+# ─── Nginx configureren ───────────────────────────────────
 echo "[8/8] Nginx configureren..."
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo rm -f /etc/nginx/sites-available/default
@@ -117,7 +117,7 @@ server {
 }
 EOF
 
-sudo ln -sf /etc/nginx/sites-available/migration_engine /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/migration_engine /etc/nginx/sites-enabled/migration_engine
 sudo nginx -t
 sudo systemctl start nginx
 sudo systemctl enable nginx
