@@ -46,6 +46,25 @@ fi
 cd /opt/app
 npm install
 
+# ─── Fixes toepassen op code ──────────────────────────────
+echo "[6b] Code fixes toepassen..."
+
+# Fix 1: powershell.exe → pwsh in server.js
+sed -i "s/spawn('powershell.exe'/spawn('pwsh'/g" /opt/app/server.js
+echo "✅ server.js: powershell.exe → pwsh"
+
+# Fix 2: localhost URLs verwijderen in HTML bestanden
+sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/policy-migration.html
+sed -i 's|http://localhost:3000/api/json-files/|/api/json-files/|g' /opt/app/public/policy-migration.html
+sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/full-migration.html
+sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/group-migration.html
+sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/prepare.html
+echo "✅ HTML: localhost URLs vervangen"
+
+# Fix 3: git safe directory instellen
+git config --global --add safe.directory /opt/app
+echo "✅ Git: safe directory ingesteld"
+
 # ─── Session secret genereren ─────────────────────────────
 echo "[7/8] Session secret instellen..."
 if ! grep -q "SESSION_SECRET" /etc/environment; then
@@ -145,4 +164,4 @@ touch /var/log/startup_done
 echo ""
 echo "✅ Setup voltooid: $(date)"
 echo "   Standaard login: admin / Admin@Xylos123!"
-echo "   ⚠️  Verander het wachtwoord meteen na de eerste login!"    
+echo "   ⚠️  Verander het wachtwoord meteen na de eerste login!"

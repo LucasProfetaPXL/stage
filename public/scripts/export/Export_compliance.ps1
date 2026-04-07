@@ -23,7 +23,7 @@ Connect-MgGraph -AccessToken $SecureToken -NoWelcome
 
 Write-Host "Verbonden met tenant $TenantId" -ForegroundColor Green
 
-$MainBackupDir = Join-Path -Path $PSScriptRoot -ChildPath "GoldenTenant_Backup"
+$MainBackupDir = if ($BackupDir -ne "") { $BackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "GoldenTenant_Backup" }
 $MainBackupDir = [System.IO.Path]::GetFullPath($MainBackupDir)
 
 function Export-IntuneObject ($Cmdlet, $Folder) {

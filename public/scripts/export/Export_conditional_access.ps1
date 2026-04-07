@@ -1,4 +1,6 @@
 param(
+    [string]$BackupDir = "",
+
     [Parameter(Mandatory=$true)]
     [string]$TenantId,
 
@@ -24,7 +26,7 @@ $SecureToken = [System.Security.SecureString]::new()
 foreach ($char in $Global:MgToken.ToCharArray()) { $SecureToken.AppendChar($char) }
 Connect-MgGraph -AccessToken $SecureToken -NoWelcome
 
-$MainBackupDir = Join-Path -Path $PSScriptRoot -ChildPath "GoldenTenant_Backup"
+$MainBackupDir = if ($BackupDir -ne "") { $BackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "GoldenTenant_Backup" }
 $MainBackupDir = [System.IO.Path]::GetFullPath($MainBackupDir)
 
 Write-Host "Backup map: $MainBackupDir" -ForegroundColor Gray
