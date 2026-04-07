@@ -8,6 +8,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$ClientSecret,
 
+    [string]$BackupDir = "",
     [string]$SelectedFiles = "",
 
     [string]$RenameMap = "{}"

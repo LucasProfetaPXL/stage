@@ -2,6 +2,7 @@ param(
     [Parameter(Mandatory=$true)] [string]$TenantId,
     [Parameter(Mandatory=$true)] [string]$ClientId,
     [Parameter(Mandatory=$true)] [string]$ClientSecret,
+    [string]$BackupDir = "",
     [string]$SelectedFiles = "",
     [string]$RenameMap = ""
 )
@@ -26,7 +27,7 @@ function Get-AuthHeader {
 $Auth = Get-AuthHeader -TenantId $TenantId -ClientId $ClientId -ClientSecret $ClientSecret
 Write-Host "Verbonden met tenant $TenantId" -ForegroundColor Green
 
-$BackupDir = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\export\GoldenTenant_Backup\AppProtection"))
+$BackupDir = if ($BackupDir -ne "") { Join-Path $BackupDir "AppProtection" } else { [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\export\GoldenTenant_Backup\AppProtection")) }
 if (!(Test-Path $BackupDir)) {
     Write-Host "[FOUT] Backup map niet gevonden: $BackupDir" -ForegroundColor Red; exit 1
 }
