@@ -1,5 +1,9 @@
+param(
+    [string]$UserBackupDir = ""
+)
+
 # Script staat in: public/scripts/fix_json/
-$BackupDir = Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\ConditionalAccess"
+$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\ConditionalAccess" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 

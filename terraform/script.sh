@@ -24,6 +24,19 @@ sudo dpkg -i packages-microsoft-prod.deb
 sudo apt-get update
 sudo apt-get install -y powershell
 
+# ─── PowerShell modules installeren ──────────────────────
+echo "[3b/8] PowerShell modules installeren..."
+pwsh -NonInteractive -Command "
+    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+    Install-Module -Name Microsoft.Graph.Authentication -Force -Scope AllUsers
+    Install-Module -Name Microsoft.Graph.Beta.Identity.SignIns -Force -Scope AllUsers
+    Install-Module -Name Microsoft.Graph.Beta.DeviceManagement -Force -Scope AllUsers
+    Install-Module -Name Microsoft.Graph.Beta.DeviceManagement.Actions -Force -Scope AllUsers
+    Install-Module -Name Microsoft.Graph.Applications -Force -Scope AllUsers
+    Install-Module -Name Microsoft.Graph.Identity.SignIns -Force -Scope AllUsers
+    Write-Host 'PS modules geinstalleerd'
+"
+
 # ─── Nginx + Certbot ──────────────────────────────────────
 echo "[4/8] Nginx en Certbot installeren..."
 sudo apt-get install -y nginx certbot python3-certbot-nginx
@@ -85,6 +98,7 @@ HOME=/root pm2 save --force
 # ─── Nginx configureren (HTTP eerst) ─────────────────────
 echo "[8/8] Nginx configureren..."
 sudo rm -f /etc/nginx/sites-enabled/default
+sudo rm -f /etc/nginx/sites-available/default
 
 sudo tee /etc/nginx/sites-available/migration_engine > /dev/null <<EOF
 server {

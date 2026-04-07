@@ -53,7 +53,6 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 //  CREDENTIALS API (per user)
 // ═══════════════════════════════════════════════════════════
 
-// Alle credentials van ingelogde user ophalen
 app.get('/api/credentials', requireAuth, (req, res) => {
     const rows = db.prepare(
         'SELECT id, label, tenant_id, app_id, created_at FROM credentials WHERE user_id = ?'
@@ -61,7 +60,6 @@ app.get('/api/credentials', requireAuth, (req, res) => {
     res.json(rows);
 });
 
-// Credential opslaan of updaten
 app.post('/api/credentials', requireAuth, (req, res) => {
     const { label, tenant_id, app_id, app_secret } = req.body;
 
@@ -85,7 +83,6 @@ app.post('/api/credentials', requireAuth, (req, res) => {
     }
 });
 
-// Credential verwijderen
 app.delete('/api/credentials/:id', requireAuth, (req, res) => {
     db.prepare(
         'DELETE FROM credentials WHERE id = ? AND user_id = ?'
@@ -114,7 +111,6 @@ app.get('/api/json-files/:category', requireAuth, (req, res) => {
     const folder = CATEGORY_FOLDERS[req.params.category];
     if (!folder) return res.status(400).json({ error: 'Onbekende categorie.' });
 
-    // Per-user map: public/scripts/export/{username}/GoldenTenant_Backup/{folder}
     const dir = path.join(
         __dirname, 'public', 'scripts', 'export',
         req.session.username, 'GoldenTenant_Backup', folder
@@ -150,7 +146,7 @@ function runScriptHandler(req, res) {
         return res.status(404).send(`[FOUT] Script niet gevonden op: ${scriptPath}`);
     }
 
-    // Per-user backup map meegeven aan PowerShell scripts
+    // Per-user backup map
     const userBackupDir = path.join(
         __dirname, 'public', 'scripts', 'export',
         req.session.username, 'GoldenTenant_Backup'
@@ -159,12 +155,18 @@ function runScriptHandler(req, res) {
 
     const psArgs   = [];
     const usedKeys = new Set();
-    const isExport = rawPath.toLowerCase().includes('export');
-    const isImport = rawPath.toLowerCase().includes('import');
+    const isExport  = rawPath.toLowerCase().includes('export');
+    const isImport  = rawPath.toLowerCase().includes('import');
+    const isFixJson = rawPath.toLowerCase().includes('fix_json');
 
-    // BackupDir altijd meesturen zodat scripts per-user opslaan
-    psArgs.push('-BackupDir', userBackupDir);
-    usedKeys.add('backupdir');
+    // BackupDir of BackupBase meesturen afhankelijk van scripttype
+    if (isFixJson) {
+        psArgs.push('-BackupBase', userBackupDir);
+        usedKeys.add('backupbase');
+    } else {
+        psArgs.push('-BackupDir', userBackupDir);
+        usedKeys.add('backupdir');
+    }
 
     Object.entries(req.body).forEach(([key, val]) => {
         if (!val || val === '') return;
@@ -191,7 +193,7 @@ function runScriptHandler(req, res) {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
 
-    const ps = spawn('powershell.exe', [
+    const ps = spawn('pwsh', [
         '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...psArgs
     ], { env: process.env });
 
