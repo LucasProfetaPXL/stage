@@ -1,8 +1,8 @@
 param(
-    [string]$UserBackupDir = ""
+    [string]$BackupBase = ""
 )
 
-$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\SecurityBaselines" }
+$BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "SecurityBaselines" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\SecurityBaselines" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 
@@ -10,7 +10,6 @@ foreach ($File in $Files) {
     try {
         $Content = Get-Content $File.FullName -Raw | ConvertFrom-Json
 
-        # Fix each setting: flatten AdditionalProperties + fix casing
         $FixedSettings = foreach ($Setting in $Content.settings) {
 
             $FixedSetting = [ordered]@{
@@ -19,7 +18,6 @@ foreach ($File in $Files) {
                 "valueJson"    = $Setting.ValueJson
             }
 
-            # Merge AdditionalProperties into the setting object
             if ($null -ne $Setting.AdditionalProperties) {
                 foreach ($Prop in $Setting.AdditionalProperties.PSObject.Properties) {
                     if (-not $FixedSetting.Contains($Prop.Name)) {
@@ -31,7 +29,6 @@ foreach ($File in $Files) {
             $FixedSetting
         }
 
-        # Rebuild the root object
         $FixedObject = [ordered]@{
             "displayName" = $Content.displayName
             "description" = if ($Content.description) { $Content.description } else { "" }

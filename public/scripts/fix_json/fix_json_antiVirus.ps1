@@ -1,8 +1,8 @@
 param(
-    [string]$UserBackupDir = ""
+    [string]$BackupBase = ""
 )
 
-$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\Antivirus" }
+$BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "Antivirus" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\Antivirus" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 
@@ -34,7 +34,6 @@ foreach ($File in $Files) {
 
         if ($Data.templateReference) { $FixedObject["templateReference"] = $Data.templateReference }
 
-        # _sourceId extraheren uit bestaand id veld
         $SrcId = if ($Data.id) { $Data.id } elseif ($Data.Id) { $Data.Id } else { $null }
         if ($SrcId) { $FixedObject["_sourceId"] = $SrcId }
 

@@ -1,9 +1,9 @@
 param(
-    [string]$UserBackupDir = ""
+    [string]$BackupBase = ""
 )
 
 # fix_json_device_config.ps1
-$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\DeviceConfigurations" }
+$BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "DeviceConfigurations" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\DeviceConfigurations" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 
@@ -25,27 +25,22 @@ foreach ($File in $Files) {
 
         $Data = $Raw | ConvertFrom-Json
 
-        # Haal _sourceId op
         $SrcId = if ($Data._sourceId) { $Data._sourceId }
                  elseif ($Data.id)    { $Data.id }
                  elseif ($Data.Id)    { $Data.Id }
                  else { $null }
 
-        # Bouw plat object op
         $Fixed = [ordered]@{}
 
-        # @odata.type uit AdditionalProperties of root
         if ($Data.AdditionalProperties -and $Data.AdditionalProperties."@odata.type") {
             $Fixed["@odata.type"] = $Data.AdditionalProperties."@odata.type"
         } elseif ($Data."@odata.type") {
             $Fixed["@odata.type"] = $Data."@odata.type"
         }
 
-        # displayName en description
         $Fixed["displayName"] = if ($Data.displayName) { $Data.displayName } elseif ($Data.DisplayName) { $Data.DisplayName } else { "" }
         $Fixed["description"]  = if ($Data.description) { $Data.description } elseif ($Data.Description) { $Data.Description } else { "" }
 
-        # Root properties (geen blacklist)
         foreach ($Prop in $Data.PSObject.Properties) {
             if ($Prop.Name -in $IgnoreProps) { continue }
             if ($Prop.Name -in @("@odata.type", "displayName", "DisplayName", "description", "Description")) { continue }
@@ -53,7 +48,6 @@ foreach ($File in $Files) {
             $Fixed[$Prop.Name] = $Prop.Value
         }
 
-        # AdditionalProperties uitpakken naar root
         if ($Data.AdditionalProperties) {
             foreach ($Prop in $Data.AdditionalProperties.PSObject.Properties) {
                 if ($Prop.Name -eq "@odata.type") { continue }
@@ -62,7 +56,6 @@ foreach ($File in $Files) {
             }
         }
 
-        # _sourceId bewaren
         if ($SrcId) { $Fixed["_sourceId"] = $SrcId }
 
         $Fixed | ConvertTo-Json -Depth 100 | Out-File $File.FullName -Encoding utf8 -Force

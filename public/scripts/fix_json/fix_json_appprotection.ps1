@@ -1,8 +1,8 @@
 param(
-    [string]$UserBackupDir = ""
+    [string]$BackupBase = ""
 )
 
-$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\AppProtection" }
+$BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "AppProtection" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\AppProtection" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 
@@ -10,14 +10,12 @@ foreach ($File in $Files) {
     try {
         $Content = Get-Content $File.FullName -Raw | ConvertFrom-Json
 
-        # Hoofdobject opbouwen met verplichte velden
         $FixedObject = [ordered]@{
             "@odata.type" = $Content.AdditionalProperties."@odata.type"
             "displayName" = $Content.DisplayName
             "description" = if ($Content.Description) { $Content.Description } else { "" }
         }
 
-        # AdditionalProperties platslaan (alles behalve @odata.type)
         $IgnoreAdditional = @("@odata.type", "deployedAppCount", "isAssigned")
         foreach ($Prop in $Content.AdditionalProperties.PSObject.Properties) {
             if ($Prop.Name -notin $IgnoreAdditional) {

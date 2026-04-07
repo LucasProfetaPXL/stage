@@ -1,12 +1,11 @@
 param(
-    [string]$UserBackupDir = ""
+    [string]$BackupBase = ""
 )
 
-$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\SettingsCatalog" }
+$BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "SettingsCatalog" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\SettingsCatalog" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 
-# Verwijder null templateReferences recursief
 function Remove-NullTemplateRef {
     param($Obj)
     if ($null -eq $Obj) { return }
@@ -31,23 +30,19 @@ function Remove-NullTemplateRef {
 foreach ($File in $Files) {
     try {
         $Content = Get-Content $File.FullName -Raw -Encoding UTF8
-        # Fix CamelCase
         $Content = $Content -replace '"SettingInstanceTemplateId"', '"settingInstanceTemplateId"'
         $Data = $Content | ConvertFrom-Json
 
-        # Sla EPM policies over
         if ($Data.technologies -like "*endpointPrivilege*" -or
             ($Data.templateReference -and $Data.templateReference.templateFamily -like "*EndpointPrivilege*")) {
             Write-Host "[SKIP] EPM overgeslagen: $($File.Name)" -ForegroundColor Yellow
             continue
         }
 
-        # Settings opschonen
         $NewSettings = foreach ($s in $Data.settings) {
             @{ "settingInstance" = $s.settingInstance }
         }
 
-        # Platforms en technologies — zorg dat het strings zijn
         $Platforms    = if ($Data.platforms -is [string] -and $Data.platforms)    { $Data.platforms }    else { "windows10" }
         $Technologies = if ($Data.technologies -is [string] -and $Data.technologies) { $Data.technologies } else { "mdm" }
 
@@ -60,17 +55,14 @@ foreach ($File in $Files) {
             "settings"     = @($NewSettings)
         }
 
-        # templateReference bewaren als die een templateId heeft
         if ($Data.templateReference -and $Data.templateReference.templateId) {
             $FixedObject["templateReference"] = $Data.templateReference
         }
 
-        # _sourceId voor PolicyMapping (eerst kijken of al aanwezig, anders id gebruiken)
         if ($Data._sourceId)   { $FixedObject["_sourceId"] = $Data._sourceId }
         elseif ($Data.id)      { $FixedObject["_sourceId"] = $Data.id }
         elseif ($Data.Id)      { $FixedObject["_sourceId"] = $Data.Id }
 
-        # Verwijder null templateReferences
         $FixedJson = $FixedObject | ConvertTo-Json -Depth 100 | ConvertFrom-Json
         Remove-NullTemplateRef $FixedJson
 

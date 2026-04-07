@@ -1,15 +1,14 @@
 param(
-    [string]$UserBackupDir = ""
+    [string]$BackupBase = ""
 )
 
 # Script staat in: public/scripts/fix_json/
-$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\ConditionalAccess" }
+$BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "ConditionalAccess" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\ConditionalAccess" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 
 $SkipAlways = @("id","createdDateTime","modifiedDateTime","deletedDateTime","additionalProperties","templateId")
 
-# Converteer PascalCase naar camelCase recursief en verwijder lege objecten/arrays
 function ConvertTo-CleanCamel {
     param($Obj)
     if ($null -eq $Obj) { return $null }
@@ -60,13 +59,11 @@ function ConvertTo-CleanCamel {
     return $output
 }
 
-# CA-specifieke fixes na camelCase conversie
 function Fix-CaPolicy {
     param($P)
     $cond = $P["conditions"]
     if ($null -eq $cond) { return }
 
-    # Fix applications
     if ($cond["applications"]) {
         $apps = $cond["applications"]
         foreach ($key in @("applicationFilter","globalSecureAccess","networkAccess")) {
@@ -77,7 +74,6 @@ function Fix-CaPolicy {
         }
     }
 
-    # Fix devices: verwijder als geen rule
     if ($cond.Contains("devices")) {
         $dev = $cond["devices"]
         $hasRule = $dev.Contains("deviceFilter") -and
@@ -86,7 +82,6 @@ function Fix-CaPolicy {
         if (-not $hasRule) { $cond.Remove("devices") }
     }
 
-    # Fix 1119: users
     if ($cond["users"]) {
         $users = $cond["users"]
         if ($users.Contains("includeUsers")) {
@@ -103,7 +98,6 @@ function Fix-CaPolicy {
         }
     }
 
-    # Verwijder lege conditions sub-objecten
     foreach ($key in @("authenticationFlows","deviceStates","clientApplications","agents","times","locations","platforms")) {
         if ($cond.Contains($key)) {
             $v = $cond[$key]
@@ -123,13 +117,9 @@ foreach ($File in $Files) {
                    elseif ($RawJson.PSObject.Properties["id"])     { $RawJson.id }
                    else { $null }
 
-        # Stap 1: camelCase + lege objecten verwijderen
         $Fixed = ConvertTo-CleanCamel $RawJson
-
-        # Stap 2: CA-specifieke fixes
         Fix-CaPolicy $Fixed
 
-        # Forceer disabled + _sourceId
         $Fixed["state"] = "disabled"
         if ($SrcId) { $Fixed["_sourceId"] = $SrcId }
 

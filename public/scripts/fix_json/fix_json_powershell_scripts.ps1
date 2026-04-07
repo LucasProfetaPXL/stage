@@ -1,9 +1,9 @@
 param(
-    [string]$UserBackupDir = ""
+    [string]$BackupBase = ""
 )
 
 # fix_json_powershell_scripts.ps1
-$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\PowerShellScripts" }
+$BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "PowerShellScripts" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\PowerShellScripts" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 Write-Host "Backup map: $BackupDir" -ForegroundColor Gray
@@ -41,7 +41,6 @@ foreach ($File in $Files) {
         if (-not $FixedObject.Contains("enforceSignatureCheck")) { $FixedObject["enforceSignatureCheck"] = $false }
         if (-not $FixedObject.Contains("runAs32Bit"))            { $FixedObject["runAs32Bit"] = $false }
 
-        
         $raa = $FixedObject["runAsAccount"]
         if ($null -eq $raa -or $raa -isnot [string] -or [string]::IsNullOrWhiteSpace($raa)) {
             $FixedObject["runAsAccount"] = "system"

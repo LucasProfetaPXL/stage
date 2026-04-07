@@ -1,8 +1,8 @@
 param(
-    [string]$UserBackupDir = ""
+    [string]$BackupBase = ""
 )
 
-$BackupDir = if ($UserBackupDir -ne "") { $UserBackupDir } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\EndpointPrivilegeManagement" }
+$BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "EndpointPrivilegeManagement" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\EndpointPrivilegeManagement" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 
@@ -17,29 +17,26 @@ foreach ($File in $Files) {
             
             if ($DefId -eq "device_vendor_msft_policy_elevationclientsettings_enableepm") {
                 
-                # 1. Default Elevation Response (Nieuw toegevoegd voor 'Require support approval')
                 $ResponseDefId = "device_vendor_msft_policy_elevationclientsettings_defaultelevationresponse"
                 $ResponseSetting = [ordered]@{
                     "@odata.type"         = "#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance"
                     "settingDefinitionId" = $ResponseDefId
                     "choiceSettingValue"  = [ordered]@{
                         "@odata.type" = "#microsoft.graph.deviceManagementConfigurationChoiceSettingValue"
-                        "value"       = "$($ResponseDefId)_2" # _2 staat voor 'Require support approval'
+                        "value"       = "$($ResponseDefId)_2"
                     }
                 }
 
-                # 2. Reporting Scope (Aangepast naar 'Diagnostic data and all endpoint elevations')
                 $ScopeDefId = "device_vendor_msft_policy_elevationclientsettings_reportingscope"
                 $ReportingScopeSetting = [ordered]@{
                     "@odata.type"         = "#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance"
                     "settingDefinitionId" = $ScopeDefId
                     "choiceSettingValue"  = [ordered]@{
                         "@odata.type" = "#microsoft.graph.deviceManagementConfigurationChoiceSettingValue"
-                        "value"       = "$($ScopeDefId)_1" # _1 is 'All endpoint elevations' (was _0)
+                        "value"       = "$($ScopeDefId)_1"
                     }
                 }
 
-                # 3. Send Data (Bevat nu beide bovenstaande als kinderen)
                 $SendDataDefId = "device_vendor_msft_policy_elevationclientsettings_senddata"
                 $SendDataSetting = [ordered]@{
                     "@odata.type"         = "#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance"
@@ -47,11 +44,10 @@ foreach ($File in $Files) {
                     "choiceSettingValue"  = [ordered]@{
                         "@odata.type" = "#microsoft.graph.deviceManagementConfigurationChoiceSettingValue"
                         "value"       = "$($SendDataDefId)_1"
-                        "children"    = @($ReportingScopeSetting) # Reporting scope hoort hieronder
+                        "children"    = @($ReportingScopeSetting)
                     }
                 }
 
-                # 4. Hoofdinstelling (Enable EPM)
                 $MainSetting = [ordered]@{
                     "@odata.type" = "#microsoft.graph.deviceManagementConfigurationSetting"
                     "settingInstance" = [ordered]@{
@@ -63,7 +59,7 @@ foreach ($File in $Files) {
                         "choiceSettingValue"  = [ordered]@{
                             "@odata.type" = "#microsoft.graph.deviceManagementConfigurationChoiceSettingValue"
                             "value"       = "$($DefId)_1"
-                            "children"    = @($SendDataSetting, $ResponseSetting) # Voeg hier beide kinderen toe
+                            "children"    = @($SendDataSetting, $ResponseSetting)
                         }
                     }
                 }
@@ -72,7 +68,6 @@ foreach ($File in $Files) {
             }
         }
 
-        # Finale opbouw (identiek aan vorige stap)
         $FixedObject = [ordered]@{
             "name"          = $Content.name
             "description"   = if ($Content.description) { $Content.description } else { "" }
