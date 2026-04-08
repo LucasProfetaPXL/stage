@@ -24,7 +24,7 @@ sudo dpkg -i packages-microsoft-prod.deb
 sudo apt-get update
 sudo apt-get install -y powershell
 
-# ─── PowerShell modules installeren ──────────────────────
+# ─── PowerShell Graph modules installeren ────────────────
 echo "[3b/8] PowerShell Graph modules installeren..."
 pwsh -NonInteractive -Command "
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
@@ -123,17 +123,66 @@ sudo systemctl start nginx
 sudo systemctl enable nginx
 sleep 5
 
-# ─── Let's Encrypt certificaat ────────────────────────────
-echo "[SSL] Certbot certificaat aanvragen voor ${domain_name}..."
-if sudo certbot --nginx \
-  -d ${domain_name} \
-  --non-interactive \
-  --agree-tos \
-  -m ${email}; then
+# ─── SSL certificaat bewaren/herstellen ──────────────────
+echo "[SSL] Certificaat controleren..."
 
-    echo "✅ SSL certificaat succesvol aangemaakt!"
+if gsutil -q stat gs://xylos-terraform-state/ssl-backup/fullchain.pem 2>/dev/null; then
+    echo "✅ Bestaand certificaat gevonden in GCS — herstellen..."
+    mkdir -p /tmp/ssl-backup
+    gsutil cp gs://xylos-terraform-state/ssl-backup/* /tmp/ssl-backup/
 
-    sudo tee /etc/systemd/system/certbot-renew.service > /dev/null <<'CERTBOT_SERVICE'
+    sudo mkdir -p /etc/letsencrypt/live/${domain_name}
+    sudo mkdir -p /etc/letsencrypt/archive/${domain_name}
+
+    sudo cp /tmp/ssl-backup/fullchain.pem /etc/letsencrypt/live/${domain_name}/fullchain.pem
+    sudo cp /tmp/ssl-backup/privkey.pem   /etc/letsencrypt/live/${domain_name}/privkey.pem
+    sudo cp /tmp/ssl-backup/chain.pem     /etc/letsencrypt/live/${domain_name}/chain.pem
+    sudo cp /tmp/ssl-backup/cert.pem      /etc/letsencrypt/live/${domain_name}/cert.pem
+
+    sudo certbot --nginx -d ${domain_name} --non-interactive --agree-tos -m ${email} --reinstall 2>/dev/null || \
+    sudo certbot install --nginx -d ${domain_name} --cert-name ${domain_name} --non-interactive 2>/dev/null || \
+    echo "⚠️  Certbot reinstall mislukt — Nginx handmatig configureren voor SSL..."
+
+    # Nginx SSL config manueel toevoegen als certbot reinstall faalt
+    sudo tee /etc/nginx/sites-available/migration_engine > /dev/null <<EOF2
+server {
+    listen 80;
+    server_name ${domain_name};
+    return 301 https://\$host\$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name ${domain_name};
+    ssl_certificate     /etc/letsencrypt/live/${domain_name}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${domain_name}/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass         http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade \$http_upgrade;
+        proxy_set_header   Connection 'upgrade';
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF2
+    sudo nginx -t && sudo systemctl reload nginx
+    echo "✅ SSL hersteld van GCS backup!"
+
+else
+    echo "Geen backup gevonden — nieuw certificaat aanvragen..."
+    if sudo certbot --nginx \
+      -d ${domain_name} \
+      --non-interactive \
+      --agree-tos \
+      -m ${email}; then
+
+        echo "✅ SSL certificaat succesvol aangemaakt!"
+
+        sudo tee /etc/systemd/system/certbot-renew.service > /dev/null <<'CERTBOT_SERVICE'
 [Unit]
 Description=Certbot Renewal
 
@@ -142,7 +191,7 @@ Type=oneshot
 ExecStart=/usr/bin/certbot renew --quiet --deploy-hook "systemctl reload nginx"
 CERTBOT_SERVICE
 
-    sudo tee /etc/systemd/system/certbot-renew.timer > /dev/null <<'CERTBOT_TIMER'
+        sudo tee /etc/systemd/system/certbot-renew.timer > /dev/null <<'CERTBOT_TIMER'
 [Unit]
 Description=Run certbot renewal twice daily
 
@@ -155,21 +204,27 @@ Persistent=true
 WantedBy=timers.target
 CERTBOT_TIMER
 
-    sudo systemctl daemon-reload
-    sudo systemctl enable certbot-renew.timer
-    sudo systemctl start certbot-renew.timer
-    sudo systemctl reload nginx
+        sudo systemctl daemon-reload
+        sudo systemctl enable certbot-renew.timer
+        sudo systemctl start certbot-renew.timer
+        sudo systemctl reload nginx
 
-    echo "✅ Auto-renewal geconfigureerd!"
-    echo "   App bereikbaar op: https://${domain_name}"
+        echo "✅ Auto-renewal geconfigureerd!"
 
-else
-    echo ""
-    echo "⚠️  SSL MISLUKT - app draait op HTTP only."
-    echo "   VM IP: $(curl -s ifconfig.me)"
-    echo ""
-    echo "Fix nadien handmatig met:"
-    echo "  sudo certbot --nginx -d ${domain_name} --email ${email}"
+    else
+        echo ""
+        echo "⚠️  SSL MISLUKT - app draait op HTTP only."
+        echo "   VM IP: $(curl -s ifconfig.me)"
+        echo ""
+        echo "Fix nadien handmatig met:"
+        echo "  sudo certbot --nginx -d ${domain_name} --email ${email}"
+    fi
+fi
+
+# ─── Certificaat opslaan in GCS ──────────────────────────
+if [ -f /etc/letsencrypt/live/${domain_name}/fullchain.pem ]; then
+    gsutil cp /etc/letsencrypt/live/${domain_name}/*.pem gs://xylos-terraform-state/ssl-backup/
+    echo "✅ Certificaat opgeslagen in GCS voor hergebruik"
 fi
 
 # ─── Markeer setup als klaar ─────────────────────────────
