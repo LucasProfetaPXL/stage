@@ -2,29 +2,29 @@
 exec > >(tee /var/log/startup.log) 2>&1
 echo "Setup gestart: $(date)"
 
-# ─── Voorkom dat script twee keer uitgevoerd wordt ───────
+# Voorkom dat script twee keer uitgevoerd wordt
 if [ -f /var/log/startup_done ]; then
     echo "Setup al uitgevoerd, script wordt overgeslagen."
     exit 0
 fi
 
-# ─── Node.js 18 ───────────────────────────────────────────
+# Node.js 18
 echo "[1/8] Node.js installeren..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# ─── Build tools ──────────────────────────────────────────
+# Build tools
 echo "[2/8] Build tools installeren..."
 sudo apt-get install -y build-essential python3
 
-# ─── PowerShell ───────────────────────────────────────────
+# PowerShell
 echo "[3/8] PowerShell installeren..."
 wget -q https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
 sudo apt-get update
 sudo apt-get install -y powershell
 
-# ─── PowerShell Graph modules installeren ────────────────
+# PowerShell Graph modules installeren
 echo "[3b/8] PowerShell Graph modules installeren..."
 pwsh -NonInteractive -Command "
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
@@ -37,34 +37,35 @@ pwsh -NonInteractive -Command "
     Write-Host 'PS modules geinstalleerd'
 "
 
-# ─── Nginx + Certbot ──────────────────────────────────────
+# Nginx + Certbot
 echo "[4/8] Nginx en Certbot installeren..."
 sudo apt-get install -y nginx certbot python3-certbot-nginx
 
-# ─── PM2 ──────────────────────────────────────────────────
+# PM2
 echo "[5/8] PM2 installeren..."
 sudo npm install -g pm2
 
-# ─── App bestanden van GitHub halen ───────────────────────
+# App bestanden van GitHub halen
 echo "[6/8] App klonen van GitHub..."
 sudo apt-get install -y git
 sudo mkdir -p /opt/app
 GIT_TERMINAL_PROMPT=0 git clone https://github.com/LucasProfetaPXL/stage.git /opt/app
 
 if [ ! -f /opt/app/server.js ]; then
-    echo "❌ Git clone mislukt — server.js niet gevonden!"
+    echo "FOUT: Git clone mislukt - server.js niet gevonden!"
     exit 1
 fi
 
 cd /opt/app
 npm install
+npm install better-sqlite3 --build-from-source
 
-# ─── Fixes toepassen op code ──────────────────────────────
+# Fixes toepassen op code
 echo "[6b] Code fixes toepassen..."
 
-# Fix 1: powershell.exe → pwsh in server.js
+# Fix 1: powershell.exe naar pwsh in server.js
 sed -i "s/spawn('powershell.exe'/spawn('pwsh'/g" /opt/app/server.js
-echo "✅ server.js: powershell.exe → pwsh"
+echo "server.js: powershell.exe vervangen door pwsh"
 
 # Fix 2: localhost URLs verwijderen in HTML bestanden
 sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/policy-migration.html
@@ -72,30 +73,30 @@ sed -i 's|http://localhost:3000/api/json-files/|/api/json-files/|g' /opt/app/pub
 sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/full-migration.html
 sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/group-migration.html
 sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/prepare.html
-echo "✅ HTML: localhost URLs vervangen"
+echo "HTML: localhost URLs vervangen"
 
 # Fix 3: git safe directory instellen
 git config --global --add safe.directory /opt/app
-echo "✅ Git: safe directory ingesteld"
+echo "Git: safe directory ingesteld"
 
-# ─── Session secret genereren ─────────────────────────────
+# Session secret genereren
 echo "[7/8] Session secret instellen..."
 if ! grep -q "SESSION_SECRET" /etc/environment; then
     echo "SESSION_SECRET=$(openssl rand -hex 32)" | sudo tee -a /etc/environment
 fi
 source /etc/environment
 
-# ─── PM2 startup configureren VOOR app start ─────────────
+# PM2 startup configureren voor app start
 export HOME=/root
 pm2 startup systemd -u root --hp /root
 systemctl enable pm2-root
 
-# ─── App starten via PM2 ──────────────────────────────────
+# App starten via PM2
 cd /opt/app
 HOME=/root pm2 start server.js --name "migration_engine"
 HOME=/root pm2 save --force
 
-# ─── Nginx configureren ───────────────────────────────────
+# Nginx configureren
 echo "[8/8] Nginx configureren..."
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo rm -f /etc/nginx/sites-available/default
@@ -123,11 +124,11 @@ sudo systemctl start nginx
 sudo systemctl enable nginx
 sleep 5
 
-# ─── SSL certificaat bewaren/herstellen ──────────────────
+# SSL certificaat bewaren/herstellen
 echo "[SSL] Certificaat controleren..."
 
 if gsutil -q stat gs://xylos-terraform-state/ssl-backup/fullchain.pem 2>/dev/null; then
-    echo "✅ Bestaand certificaat gevonden in GCS — herstellen..."
+    echo "Bestaand certificaat gevonden in GCS - herstellen..."
     mkdir -p /tmp/ssl-backup
     gsutil cp gs://xylos-terraform-state/ssl-backup/* /tmp/ssl-backup/
 
@@ -141,9 +142,8 @@ if gsutil -q stat gs://xylos-terraform-state/ssl-backup/fullchain.pem 2>/dev/nul
 
     sudo certbot --nginx -d ${domain_name} --non-interactive --agree-tos -m ${email} --reinstall 2>/dev/null || \
     sudo certbot install --nginx -d ${domain_name} --cert-name ${domain_name} --non-interactive 2>/dev/null || \
-    echo "⚠️  Certbot reinstall mislukt — Nginx handmatig configureren voor SSL..."
+    echo "WAARSCHUWING: Certbot reinstall mislukt - Nginx handmatig configureren voor SSL..."
 
-    # Nginx SSL config manueel toevoegen als certbot reinstall faalt
     sudo tee /etc/nginx/sites-available/migration_engine > /dev/null <<EOF2
 server {
     listen 80;
@@ -170,17 +170,17 @@ server {
 }
 EOF2
     sudo nginx -t && sudo systemctl reload nginx
-    echo "✅ SSL hersteld van GCS backup!"
+    echo "SSL hersteld van GCS backup!"
 
 else
-    echo "Geen backup gevonden — nieuw certificaat aanvragen..."
+    echo "Geen backup gevonden - nieuw certificaat aanvragen..."
     if sudo certbot --nginx \
       -d ${domain_name} \
       --non-interactive \
       --agree-tos \
       -m ${email}; then
 
-        echo "✅ SSL certificaat succesvol aangemaakt!"
+        echo "SSL certificaat succesvol aangemaakt!"
 
         sudo tee /etc/systemd/system/certbot-renew.service > /dev/null <<'CERTBOT_SERVICE'
 [Unit]
@@ -209,28 +209,28 @@ CERTBOT_TIMER
         sudo systemctl start certbot-renew.timer
         sudo systemctl reload nginx
 
-        echo "✅ Auto-renewal geconfigureerd!"
+        echo "Auto-renewal geconfigureerd!"
 
     else
         echo ""
-        echo "⚠️  SSL MISLUKT - app draait op HTTP only."
-        echo "   VM IP: $(curl -s ifconfig.me)"
+        echo "WAARSCHUWING: SSL MISLUKT - app draait op HTTP only."
+        echo "VM IP: $(curl -s ifconfig.me)"
         echo ""
         echo "Fix nadien handmatig met:"
         echo "  sudo certbot --nginx -d ${domain_name} --email ${email}"
     fi
 fi
 
-# ─── Certificaat opslaan in GCS ──────────────────────────
+# Certificaat opslaan in GCS
 if [ -f /etc/letsencrypt/live/${domain_name}/fullchain.pem ]; then
     gsutil cp /etc/letsencrypt/live/${domain_name}/*.pem gs://xylos-terraform-state/ssl-backup/
-    echo "✅ Certificaat opgeslagen in GCS voor hergebruik"
+    echo "Certificaat opgeslagen in GCS voor hergebruik"
 fi
 
-# ─── Markeer setup als klaar ─────────────────────────────
+# Markeer setup als klaar
 touch /var/log/startup_done
 
 echo ""
-echo "✅ Setup voltooid: $(date)"
-echo "   Standaard login: admin / Admin@Xylos123!"
-echo "   ⚠️  Verander het wachtwoord meteen na de eerste login!"    
+echo "Setup voltooid: $(date)"
+echo "Standaard login: admin / Admin@Xylos123!"
+echo "Verander het wachtwoord meteen na de eerste login!"
