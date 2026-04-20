@@ -69,4 +69,4 @@ resource "google_compute_firewall" "security_rules" {
   }
   target_tags = ["automation"]
   source_ranges = ["0.0.0.0/0"]
-}
+} 
