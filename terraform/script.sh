@@ -254,9 +254,9 @@ else
         echo "SSL certificaat succesvol aangemaakt via Let's Encrypt!"
     fi
 
-    if [ "$SSL_OK" = false ] && [ -n "${zerossl_kid}" ] && [ -n "${zerossl_hmac}" ]; then
+    if [ "$SSL_OK" = false ] && [ -n "$${zerossl_kid}" ] && [ -n "$${zerossl_hmac}" ]; then
         echo "Let's Encrypt mislukt - ZeroSSL proberen..."
-        if sudo certbot --nginx -d ${domain_name} --non-interactive --agree-tos -m ${email} --server https://acme.zerossl.com/v2/DV90 --eab-kid "${zerossl_kid}" --eab-hmac-key "${zerossl_hmac}"; then
+        if sudo certbot --nginx -d ${domain_name} --non-interactive --agree-tos -m ${email} --server https://acme.zerossl.com/v2/DV90 --eab-kid "$${zerossl_kid}" --eab-hmac-key "$${zerossl_hmac}"; then
             SSL_OK=true
             echo "SSL certificaat succesvol aangemaakt via ZeroSSL!"
         fi
