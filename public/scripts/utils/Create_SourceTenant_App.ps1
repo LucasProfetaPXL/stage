@@ -1,5 +1,7 @@
 param(
-    [Parameter(Mandatory=$true)] [string]$TenantId,
+    [Parameter(Mandatory=$true)]
+    [Alias('CustomerTenantId')]
+    [string]$TenantId,
     [string]$AppName = "XylosMigration_Source"
 )
 
