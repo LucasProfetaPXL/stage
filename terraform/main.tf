@@ -65,7 +65,7 @@ resource "google_compute_firewall" "security_rules" {
   network = "default"
   allow {
     protocol = "tcp"
-    ports = ["443", "80"]
+    ports = ["443"]
   }
   target_tags = ["automation"]
   source_ranges = ["0.0.0.0/0"]
