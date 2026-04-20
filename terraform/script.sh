@@ -67,7 +67,61 @@ echo "[6b] Code fixes toepassen..."
 sed -i "s/spawn('powershell.exe'/spawn('pwsh'/g" /opt/app/server.js
 echo "server.js: powershell.exe vervangen door pwsh"
 
-# Fix 2: localhost URLs verwijderen in HTML bestanden
+# Fix 2: -File naar -Command met 6>&1 zodat device code zichtbaar is in browser
+# Vervangt de spawn aanroep om PowerShell stream 6 (Write-Host) door te sturen naar stdout
+python3 - <<'PYEOF'
+import re
+
+with open('/opt/app/server.js', 'r') as f:
+    content = f.read()
+
+old = """    const ps = spawn('pwsh', [
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...psArgs
+    ], { env: process.env });"""
+
+new = """    const escapedPath = scriptPath.replace(/'/g, "''");
+    const argsStr = psArgs.map(a => {
+        if (a.startsWith('-')) return a;
+        return `'${a.replace(/'/g, "''")}'`;
+    }).join(' ');
+
+    const ps = spawn('pwsh', [
+        '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-Command', `& '${escapedPath}' ${argsStr} 6>&1`
+    ], { env: process.env });"""
+
+if old in content:
+    content = content.replace(old, new)
+    with open('/opt/app/server.js', 'w') as f:
+        f.write(content)
+    print("server.js: 6>&1 fix toegepast")
+else:
+    print("server.js: spawn patroon niet gevonden - fix overgeslagen")
+PYEOF
+
+# Fix 3: isUtils check toevoegen als die nog niet bestaat
+python3 - <<'PYEOF'
+with open('/opt/app/server.js', 'r') as f:
+    content = f.read()
+
+if 'isUtils' not in content:
+    old = "    const isFixJson = rawPath.toLowerCase().includes('fix_json');"
+    new = """    const isFixJson = rawPath.toLowerCase().includes('fix_json');
+    const isUtils   = rawPath.toLowerCase().includes('utils');"""
+    content = content.replace(old, new)
+
+    old = "    } else {\n        psArgs.push('-BackupDir', userBackupDir);"
+    new = "    } else if (!isUtils) {\n        psArgs.push('-BackupDir', userBackupDir);"
+    content = content.replace(old, new)
+
+    with open('/opt/app/server.js', 'w') as f:
+        f.write(content)
+    print("server.js: isUtils fix toegepast")
+else:
+    print("server.js: isUtils fix al aanwezig")
+PYEOF
+
+# Fix 4: localhost URLs verwijderen in HTML bestanden
 sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/policy-migration.html
 sed -i 's|http://localhost:3000/api/json-files/|/api/json-files/|g' /opt/app/public/policy-migration.html
 sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/full-migration.html
@@ -75,7 +129,19 @@ sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/group-migr
 sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/prepare.html
 echo "HTML: localhost URLs vervangen"
 
-# Fix 3: git safe directory instellen
+# Fix 5: Alias CustomerTenantId toevoegen aan utils PS1 scripts
+for ps1file in /opt/app/public/scripts/utils/Create_SourceTenant_App.ps1 /opt/app/public/scripts/utils/Create_DestTenant_App.ps1; do
+    if [ -f "$ps1file" ]; then
+        if ! grep -q "Alias('CustomerTenantId')" "$ps1file"; then
+            sed -i "s/\[Parameter(Mandatory=\$true)\] \[string\]\$TenantId,/[Parameter(Mandatory=\$true)]\n    [Alias('CustomerTenantId')]\n    [string]\$TenantId,/" "$ps1file"
+            echo "PS1 alias fix toegepast op $ps1file"
+        else
+            echo "PS1 alias fix al aanwezig in $ps1file"
+        fi
+    fi
+done
+
+# Fix 6: git safe directory instellen
 git config --global --add safe.directory /opt/app
 echo "Git: safe directory ingesteld"
 
@@ -114,6 +180,10 @@ server {
         proxy_set_header   Host \$host;
         proxy_set_header   X-Real-IP \$remote_addr;
         proxy_cache_bypass \$http_upgrade;
+        proxy_read_timeout    300;
+        proxy_connect_timeout 300;
+        proxy_send_timeout    300;
+        proxy_buffering       off;
     }
 }
 EOF
@@ -166,6 +236,10 @@ server {
         proxy_set_header   Host \$host;
         proxy_set_header   X-Real-IP \$remote_addr;
         proxy_cache_bypass \$http_upgrade;
+        proxy_read_timeout    300;
+        proxy_connect_timeout 300;
+        proxy_send_timeout    300;
+        proxy_buffering       off;
     }
 }
 EOF2
@@ -174,14 +248,33 @@ EOF2
 
 else
     echo "Geen backup gevonden - nieuw certificaat aanvragen..."
-    if sudo certbot --nginx \
-      -d ${domain_name} \
-      --non-interactive \
-      --agree-tos \
-      -m ${email}; then
 
-        echo "SSL certificaat succesvol aangemaakt!"
+    # Probeer eerst Let's Encrypt
+    SSL_OK=false
+    if sudo certbot --nginx -d ${domain_name} --non-interactive --agree-tos -m ${email}; then
+        SSL_OK=true
+        echo "SSL certificaat succesvol aangemaakt via Let's Encrypt!"
+    fi
 
+    # Fallback: ZeroSSL als Let's Encrypt rate limit bereikt
+    if [ "$SSL_OK" = false ]; then
+        echo "Let's Encrypt mislukt - ZeroSSL proberen..."
+        if [ -n "${zerossl_kid}" ] && [ -n "${zerossl_hmac}" ]; then
+            if sudo certbot --nginx \
+              -d ${domain_name} \
+              --non-interactive \
+              --agree-tos \
+              -m ${email} \
+              --server https://acme.zerossl.com/v2/DV90 \
+              --eab-kid "${zerossl_kid}" \
+              --eab-hmac-key "${zerossl_hmac}"; then
+                SSL_OK=true
+                echo "SSL certificaat succesvol aangemaakt via ZeroSSL!"
+            fi
+        fi
+    fi
+
+    if [ "$SSL_OK" = true ]; then
         sudo tee /etc/systemd/system/certbot-renew.service > /dev/null <<'CERTBOT_SERVICE'
 [Unit]
 Description=Certbot Renewal
@@ -208,9 +301,7 @@ CERTBOT_TIMER
         sudo systemctl enable certbot-renew.timer
         sudo systemctl start certbot-renew.timer
         sudo systemctl reload nginx
-
         echo "Auto-renewal geconfigureerd!"
-
     else
         echo ""
         echo "WAARSCHUWING: SSL MISLUKT - app draait op HTTP only."
@@ -233,4 +324,4 @@ touch /var/log/startup_done
 echo ""
 echo "Setup voltooid: $(date)"
 echo "Standaard login: admin / Admin@Xylos123!"
-echo "Verander het wachtwoord meteen na de eerste login!"      
+echo "Verander het wachtwoord meteen na de eerste login!"

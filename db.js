@@ -19,8 +19,10 @@ const count = db.prepare('SELECT COUNT(*) as count FROM users').get();
 if (count.count === 0) {
     const hash = bcrypt.hashSync('Admin@Xylos123!', 12);
     const hash1 = bcrypt.hashSync('XylosMigration123!', 12);
+    const hash2 = bcrypt.hashSync('giulia_quadrifoglio@', 12);
     db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('admin', hash);
     db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('abdelmalek', hash1);
+    db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('Gauthier', hash2);
     console.log('✅ Standaard admin aangemaakt — verander het wachtwoord meteen!');
 }
 
