@@ -95,12 +95,3 @@ jobs:
           TF_VAR_domain_name: ${{ secrets.TF_VAR_DOMAIN_NAME }}
           TF_VAR_email:       ${{ secrets.TF_VAR_EMAIL }}
           TF_VAR_project_id:  ${{ secrets.TF_VAR_PROJECT_ID }}
-
-      - name: Deploy code via git pull
-        run: |
-          gcloud compute ssh migration-tool \
-            --zone=us-central1-a \
-            --project=${{ secrets.TF_VAR_PROJECT_ID }} \
-            --ssh-key-file=~/.ssh/id_rsa \
-            --strict-host-key-checking=no \
-            --command="cd /opt/app && git pull origin main && npm install --production && pm2 restart migration_engine"
