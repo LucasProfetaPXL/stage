@@ -5,8 +5,7 @@ param(
     [string]$AppName = "XylosMigration_App"
 )
 
-Set-MgGraphOption -DisableLoginByWAM $true
-Connect-MgGraph -TenantId $CustomerTenantId -Scopes "Application.ReadWrite.All", "Directory.ReadWrite.All", "AppRoleAssignment.ReadWrite.All"
+Connect-MgGraph -TenantId $CustomerTenantId -Scopes "Application.ReadWrite.All", "Directory.ReadWrite.All" -UseDeviceCode, "AppRoleAssignment.ReadWrite.All"
 
 Write-Host "App aanmaken: $AppName" -ForegroundColor Cyan
 $App = New-MgApplication -DisplayName $AppName

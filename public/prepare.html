@@ -40,6 +40,138 @@
         }
         .badge-source { background: rgba(30,45,90,0.08); color: var(--navy); }
         .badge-dest   { background: var(--lime-glow); color: var(--lime-dark); }
+
+        .step-flow {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin-bottom: 28px;
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .step-flow-item {
+            flex: 1;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-right: 1px solid var(--gray-border);
+        }
+        .step-flow-item:last-child { border-right: none; }
+        .step-flow-num {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: var(--gray-border);
+            color: var(--gray-text);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 800;
+            flex-shrink: 0;
+        }
+        .step-flow-item.done .step-flow-num { background: var(--lime); color: var(--navy); }
+        .step-flow-text { font-size: 12px; font-weight: 600; color: var(--navy); }
+        .step-flow-sub  { font-size: 10.5px; color: var(--gray-text); margin-top: 1px; }
+
+        /* ── DEVICE CODE MODAL ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 36px 40px;
+            width: 480px;
+            max-width: 90vw;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+            text-align: center;
+            transform: translateY(20px);
+            transition: transform .25s;
+        }
+        .modal-overlay.visible .modal { transform: translateY(0); }
+        .modal-icon { font-size: 3rem; margin-bottom: 16px; }
+        .modal-title { font-size: 1.3rem; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+        .modal-sub { font-size: .9rem; color: var(--gray-text); margin-bottom: 24px; }
+        .modal-code-wrap {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .modal-code-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        .modal-code {
+            font-family: 'Consolas', monospace;
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: 8px;
+            color: #f0f6fc;
+        }
+        .modal-url {
+            font-size: .85rem;
+            color: var(--gray-text);
+            margin-bottom: 20px;
+        }
+        .modal-url a {
+            color: var(--navy);
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .modal-url a:hover { text-decoration: underline; }
+        .modal-copy-btn {
+            background: var(--navy);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: .85rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-right: 8px;
+            transition: opacity .15s;
+        }
+        .modal-copy-btn:hover { opacity: .85; }
+        .modal-close-btn {
+            background: none;
+            border: 1px solid var(--gray-border);
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: .85rem;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--gray-text);
+            transition: all .15s;
+        }
+        .modal-close-btn:hover { border-color: var(--navy); color: var(--navy); }
+        .modal-status {
+            margin-top: 16px;
+            font-size: .8rem;
+            color: var(--gray-text);
+        }
+        .modal-status.waiting { color: var(--navy); }
+        .modal-status.done    { color: var(--lime-dark); font-weight: 700; }
+
+        /* ── RESULT BOX ── */
         .result-box {
             background: var(--off-white);
             border: 1px solid var(--gray-border);
@@ -89,44 +221,32 @@
         }
         .copy-btn:hover { background: var(--off-white); color: var(--navy); }
 
-        .step-flow {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            margin-bottom: 28px;
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-        .step-flow-item {
-            flex: 1;
-            padding: 14px 18px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-right: 1px solid var(--gray-border);
-        }
-        .step-flow-item:last-child { border-right: none; }
-        .step-flow-num {
-            width: 28px; height: 28px;
-            border-radius: 50%;
-            background: var(--gray-border);
-            color: var(--gray-text);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 800;
-            flex-shrink: 0;
-        }
-        .step-flow-item.done .step-flow-num { background: var(--lime); color: var(--navy); }
-        .step-flow-text { font-size: 12px; font-weight: 600; color: var(--navy); }
-        .step-flow-sub  { font-size: 10.5px; color: var(--gray-text); margin-top: 1px; }
-
-        @media (max-width: 768px) {
-            .tenant-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 768px) { .tenant-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+
+<!-- DEVICE CODE MODAL -->
+<div class="modal-overlay" id="deviceCodeModal">
+    <div class="modal">
+        <div class="modal-icon">🔐</div>
+        <div class="modal-title">Authenticatie vereist</div>
+        <div class="modal-sub">Open de onderstaande URL en voer de code in om in te loggen als Global Admin.</div>
+        <div class="modal-code-wrap">
+            <div class="modal-code-label">Jouw device code</div>
+            <div class="modal-code" id="modal-code">——————</div>
+        </div>
+        <div class="modal-url">
+            Ga naar <a href="https://microsoft.com/devicelogin" target="_blank">microsoft.com/devicelogin</a> en voer de code in
+        </div>
+        <button class="modal-copy-btn" onclick="copyCode()">📋 Code kopiëren</button>
+        <a href="https://microsoft.com/devicelogin" target="_blank">
+            <button class="modal-copy-btn" style="background:#0078d4">🌐 Pagina openen</button>
+        </a>
+        <button class="modal-close-btn" onclick="closeModal()">Sluiten</button>
+        <div class="modal-status waiting" id="modal-status">⏳ Wachten op aanmelding...</div>
+    </div>
+</div>
 
 <div id="nav-placeholder"></div>
 
@@ -137,43 +257,32 @@
         <p>Maak de benodigde app-registraties aan in beide tenants en ken de juiste API-permissies toe vóór de migratie start.</p>
     </div>
 
-    <!-- Step flow indicator -->
     <div class="step-flow">
         <div class="step-flow-item" id="flow-1">
             <div class="step-flow-num">1</div>
-            <div>
-                <div class="step-flow-text">App aanmaken — Source</div>
-                <div class="step-flow-sub">New_app.ps1 in brontenant</div>
-            </div>
+            <div><div class="step-flow-text">App aanmaken — Source</div><div class="step-flow-sub">Create_SourceTenant_App.ps1</div></div>
         </div>
         <div class="step-flow-item" id="flow-2">
             <div class="step-flow-num">2</div>
-            <div>
-                <div class="step-flow-text">App aanmaken — Destination</div>
-                <div class="step-flow-sub">New_app.ps1 in doeltenant</div>
-            </div>
+            <div><div class="step-flow-text">App aanmaken — Destination</div><div class="step-flow-sub">Create_DestTenant_App.ps1</div></div>
         </div>
         <div class="step-flow-item" id="flow-3">
             <div class="step-flow-num">3</div>
-            <div>
-                <div class="step-flow-text">Permissies toekennen</div>
-                <div class="step-flow-sub">Policies_To_app.ps1 + Admin Consent</div>
-            </div>
+            <div><div class="step-flow-text">Klaar voor migratie</div><div class="step-flow-sub">Credentials beschikbaar</div></div>
         </div>
     </div>
 
-    <!-- STAP 1 & 2: App aanmaken in beide tenants -->
     <div class="card">
         <div class="card-header">
             <div class="card-icon blue">📦</div>
             <div>
-                <div class="card-title">Stap 1 & 2 — App Registraties Aanmaken</div>
-                <div class="card-subtitle">Maak een app-registratie aan in de source én destination tenant</div>
+                <div class="card-title">App Registraties Aanmaken</div>
+                <div class="card-subtitle">Maakt automatisch een app aan met alle benodigde Graph API permissies en admin consent</div>
             </div>
         </div>
 
         <div class="alert alert-info">
-            ℹ️ &nbsp;Voer dit uit voor <strong>beide</strong> tenants. De App ID die je terugkrijgt gebruik je als <code>ClientId</code> bij de export/import scripts.
+            ℹ️ &nbsp;Authenticatie via <strong>device code</strong> — geen browser popup. Je krijgt een code die je invoert op <strong>microsoft.com/devicelogin</strong>. De code verschijnt in een popup.
         </div>
 
         <div class="tenant-grid">
@@ -189,24 +298,29 @@
                     </div>
                     <div class="field">
                         <label>App naam</label>
-                        <input type="text" id="src-AppName" value="XylosMigration_Source" placeholder="XylosMigration_Source">
+                        <input type="text" id="src-AppName" value="XylosMigration_Source">
                     </div>
                 </div>
-                <button type="button" class="btn btn-outline btn-full" id="btn-new-src"
-                        onclick="runPrepare('New_app', 'src', 'btn-new-src')">
+                <button type="button" class="btn btn-outline btn-full" id="btn-src"
+                        onclick="runCreate('utils/Create_SourceTenant_App', 'src', 'btn-src', 1)">
                     <div class="spinner"></div>
-                    <span class="btn-text">▶ App Aanmaken in Source</span>
+                    <span class="btn-text">▶ App Aanmaken — Source</span>
                 </button>
                 <div class="result-box" id="result-src">
-                    <div class="result-row">
-                        <span class="result-label">App ID</span>
-                        <span class="result-value" id="result-src-appid">—</span>
-                        <button type="button" class="copy-btn" onclick="copyVal('result-src-appid')">Kopieer</button>
-                    </div>
                     <div class="result-row">
                         <span class="result-label">Tenant ID</span>
                         <span class="result-value" id="result-src-tenantid">—</span>
                         <button type="button" class="copy-btn" onclick="copyVal('result-src-tenantid')">Kopieer</button>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Client ID</span>
+                        <span class="result-value" id="result-src-clientid">—</span>
+                        <button type="button" class="copy-btn" onclick="copyVal('result-src-clientid')">Kopieer</button>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Client Secret</span>
+                        <span class="result-value" id="result-src-secret">—</span>
+                        <button type="button" class="copy-btn" onclick="copyVal('result-src-secret')">Kopieer</button>
                     </div>
                 </div>
             </div>
@@ -223,103 +337,35 @@
                     </div>
                     <div class="field">
                         <label>App naam</label>
-                        <input type="text" id="dst-AppName" value="XylosMigration_Destination" placeholder="XylosMigration_Destination">
+                        <input type="text" id="dst-AppName" value="XylosMigration_Destination">
                     </div>
                 </div>
-                <button type="button" class="btn btn-outline btn-full" id="btn-new-dst"
-                        onclick="runPrepare('New_app', 'dst', 'btn-new-dst')">
+                <button type="button" class="btn btn-outline btn-full" id="btn-dst"
+                        onclick="runCreate('utils/Create_DestTenant_App', 'dst', 'btn-dst', 2)">
                     <div class="spinner"></div>
-                    <span class="btn-text">▶ App Aanmaken in Destination</span>
+                    <span class="btn-text">▶ App Aanmaken — Destination</span>
                 </button>
                 <div class="result-box" id="result-dst">
-                    <div class="result-row">
-                        <span class="result-label">App ID</span>
-                        <span class="result-value" id="result-dst-appid">—</span>
-                        <button type="button" class="copy-btn" onclick="copyVal('result-dst-appid')">Kopieer</button>
-                    </div>
                     <div class="result-row">
                         <span class="result-label">Tenant ID</span>
                         <span class="result-value" id="result-dst-tenantid">—</span>
                         <button type="button" class="copy-btn" onclick="copyVal('result-dst-tenantid')">Kopieer</button>
                     </div>
+                    <div class="result-row">
+                        <span class="result-label">Client ID</span>
+                        <span class="result-value" id="result-dst-clientid">—</span>
+                        <button type="button" class="copy-btn" onclick="copyVal('result-dst-clientid')">Kopieer</button>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">Client Secret</span>
+                        <span class="result-value" id="result-dst-secret">—</span>
+                        <button type="button" class="copy-btn" onclick="copyVal('result-dst-secret')">Kopieer</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- STAP 3: Permissies toekennen -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-icon" style="background:#dcfce7">🔐</div>
-            <div>
-                <div class="card-title">Stap 3 — API Permissies Toekennen</div>
-                <div class="card-subtitle">Voeg Graph API-rechten toe en verleen automatisch Admin Consent</div>
-            </div>
-        </div>
-
-        <div class="alert alert-info" style="flex-direction:column; align-items:flex-start; gap:8px">
-            <div>ℹ️ &nbsp;Dit script voegt de volgende Graph API permissies toe en verleent meteen <strong>Admin Consent</strong>:</div>
-            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:2px">
-                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">DeviceManagementScripts.ReadWrite.All</code>
-                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">DeviceManagementApps.Read.All</code>
-                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">DeviceManagementConfiguration.ReadWrite.All</code>
-                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">DeviceManagementApps.ReadWrite.All</code>
-                <code style="background:rgba(30,45,90,0.08);padding:2px 8px;border-radius:4px;font-size:11px">Policy.ReadWrite.ConditionalAccess</code>
-            </div>
-        </div>
-
-        <div class="tenant-grid">
-            <div class="tenant-block">
-                <div class="tenant-block-header">
-                    <span class="tenant-badge badge-source">🔵 Source Tenant — Permissies</span>
-                </div>
-                <div class="form-grid" style="grid-template-columns:1fr; margin-bottom:14px">
-                    <div class="field">
-                        <label>Tenant ID <span style="color:var(--red)">*</span></label>
-                        <input type="text" id="permsrc-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-                        <span class="input-hint">Zelfde als Stap 1 — of kopieer van resultaat hierboven</span>
-                    </div>
-                    <div class="field">
-                        <label>App naam</label>
-                        <input type="text" id="permsrc-AppName" value="XylosMigration_Source" placeholder="XylosMigration_Source">
-                    </div>
-                </div>
-                <button type="button" class="btn btn-primary btn-full" id="btn-perm-src"
-                        onclick="runPrepare('Policies_To_app', 'permsrc', 'btn-perm-src')">
-                    <div class="spinner"></div>
-                    <span class="btn-text">🔐 Permissies Toekennen — Source</span>
-                </button>
-            </div>
-
-            <div class="tenant-block">
-                <div class="tenant-block-header">
-                    <span class="tenant-badge badge-dest">🟢 Destination Tenant — Permissies</span>
-                </div>
-                <div class="form-grid" style="grid-template-columns:1fr; margin-bottom:14px">
-                    <div class="field">
-                        <label>Tenant ID <span style="color:var(--red)">*</span></label>
-                        <input type="text" id="permdst-TenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-                        <span class="input-hint">Zelfde als Stap 2 — of kopieer van resultaat hierboven</span>
-                    </div>
-                    <div class="field">
-                        <label>App naam</label>
-                        <input type="text" id="permdst-AppName" value="XylosMigration_Destination" placeholder="XylosMigration_Destination">
-                    </div>
-                </div>
-                <button type="button" class="btn btn-primary btn-full" id="btn-perm-dst"
-                        onclick="runPrepare('Policies_To_app', 'permdst', 'btn-perm-dst')">
-                    <div class="spinner"></div>
-                    <span class="btn-text">🔐 Permissies Toekennen — Destination</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="alert alert-warning" style="margin-top:4px;margin-bottom:0">
-            ⚠️ &nbsp;Authenticatie verloopt via een <strong>interactieve browser-popup</strong>. Je moet Global Admin zijn in de betreffende tenant om Admin Consent te verlenen.
-        </div>
-    </div>
-
-    <!-- Console -->
     <div class="console-wrap">
         <div class="console-header">
             <div class="console-header-left">
@@ -334,76 +380,22 @@
 
 <script src="app.js"></script>
 <script>
-async function runPrepare(scriptName, prefix, btnId) {
-    const tenantId = document.getElementById(`${prefix}-TenantId`)?.value.trim();
-    const appName  = document.getElementById(`${prefix}-AppName`)?.value.trim();
-
-    if (!tenantId) {
-        consolePrint(`\n[FOUT] Vul het Tenant ID in.`, 'err');
-        return;
-    }
-
-    const btn = document.getElementById(btnId);
-    btn.classList.add('running');
-    btn.disabled = true;
-
-    document.getElementById('console-title').textContent = `PowerShell — ${scriptName}.ps1`;
-    consoleClear();
-    consolePrint(`> Script: ${scriptName}.ps1`, 'info');
-    consolePrint(`> Tenant: ${tenantId}`, 'info');
-    if (appName) consolePrint(`> App naam: ${appName}`, 'info');
-
-    try {
-        const res = await fetch(`http://localhost:3000/api/run/utils/${scriptName}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                CustomerTenantId: tenantId,
-                AppName: appName || 'XylosMigration_App'
-            })
-        });
-
-        const text = await res.text();
-
-        if (!res.ok) {
-            consolePrint(`\n[FOUT] Server status ${res.status}`, 'err');
-            consoleWriteLines(text);
-        } else {
-            consoleWriteLines(text);
-            consolePrint(`\n> Klaar.`, 'ok');
-
-            // Probeer App ID uit output te halen
-            const match = text.match(/App is gemaakt met ID=\s*([a-f0-9-]{36})/i);
-            if (match && (prefix === 'src' || prefix === 'dst')) {
-                const appId = match[1].trim();
-                document.getElementById(`result-${prefix}-appid`).textContent = appId;
-                document.getElementById(`result-${prefix}-tenantid`).textContent = tenantId;
-                document.getElementById(`result-${prefix}`).classList.add('visible');
-
-                // Auto-fill permissies veld
-                const permPrefix = prefix === 'src' ? 'permsrc' : 'permdst';
-                const permField = document.getElementById(`${permPrefix}-TenantId`);
-                if (permField && !permField.value.trim()) permField.value = tenantId;
-
-                markFlowDone(prefix === 'src' ? 1 : 2);
-            }
-            if (scriptName === 'Policies_To_app') {
-                markFlowDone(3);
-            }
-        }
-    } catch (err) {
-        consolePrint(`\n[NETWERK FOUT] Kan Migration Engine niet bereiken.`, 'err');
-        consolePrint(`Controleer of 'node server.js' draait op poort 3000.`, 'warn');
-        consolePrint(`Details: ${err.message}`, 'err');
-    } finally {
-        btn.classList.remove('running');
-        btn.disabled = false;
-    }
+function showModal(code) {
+    document.getElementById('modal-code').textContent = code;
+    document.getElementById('modal-status').textContent = '⏳ Wachten op aanmelding...';
+    document.getElementById('modal-status').className = 'modal-status waiting';
+    document.getElementById('deviceCodeModal').classList.add('visible');
 }
 
-function markFlowDone(n) {
-    const el = document.getElementById(`flow-${n}`);
-    if (el) el.classList.add('done');
+function closeModal() {
+    document.getElementById('deviceCodeModal').classList.remove('visible');
+}
+
+function copyCode() {
+    const code = document.getElementById('modal-code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        consolePrint(`> Code gekopieerd: ${code}`, 'ok');
+    });
 }
 
 function copyVal(id) {
@@ -412,6 +404,99 @@ function copyVal(id) {
         navigator.clipboard.writeText(val).then(() => {
             consolePrint(`> Gekopieerd: ${val}`, 'ok');
         });
+    }
+}
+
+function markFlowDone(n) {
+    const el = document.getElementById(`flow-${n}`);
+    if (el) el.classList.add('done');
+}
+
+async function runCreate(scriptPath, prefix, btnId, flowStep) {
+    const tenantId = document.getElementById(`${prefix}-TenantId`)?.value.trim();
+    const appName  = document.getElementById(`${prefix}-AppName`)?.value.trim();
+
+    if (!tenantId) { alert('Vul het Tenant ID in.'); return; }
+
+    const btn = document.getElementById(btnId);
+    btn.classList.add('running'); btn.disabled = true;
+
+    document.getElementById('console-title').textContent = `PowerShell — ${scriptPath.split('/').pop()}.ps1`;
+    consoleClear();
+    consolePrint(`> Script: ${scriptPath}.ps1`, 'info');
+    consolePrint(`> Tenant: ${tenantId}`, 'info');
+
+    try {
+        const res = await fetch(`http://localhost:3000/api/run/${scriptPath}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ CustomerTenantId: tenantId, AppName: appName })
+        });
+
+        if (!res.ok) {
+            consolePrint(`[FOUT] Server status ${res.status}`, 'err');
+            btn.classList.remove('running'); btn.disabled = false;
+            return;
+        }
+
+        const reader  = res.body.getReader();
+        const decoder = new TextDecoder();
+        let   buf     = '';
+        let   fullOutput = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('\n'); buf = lines.pop();
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                fullOutput += line + '\n';
+                consolePrint(line);
+
+                // Device code detecteren
+                const codeMatch = line.match(/enter the code\s+([A-Z0-9]{8,12})/i)
+                               || line.match(/code:\s*([A-Z0-9]{8,12})/i);
+                if (codeMatch) {
+                    showModal(codeMatch[1]);
+                }
+
+                // Aanmelding geslaagd
+                if (line.toLowerCase().includes('welcome to microsoft graph') ||
+                    line.toLowerCase().includes('verbonden') ||
+                    line.toLowerCase().includes('connected')) {
+                    document.getElementById('modal-status').textContent = '✓ Aanmelding geslaagd!';
+                    document.getElementById('modal-status').className = 'modal-status done';
+                    setTimeout(closeModal, 2000);
+                }
+            });
+        }
+        if (buf.trim()) { fullOutput += buf; consolePrint(buf); }
+
+        consolePrint('> Klaar.', 'ok');
+
+        // Resultaten extraheren
+        const clientIdMatch = fullOutput.match(/Client ID\s*[:\s]+([a-f0-9-]{36})/i)
+                           || fullOutput.match(/App ID\s*[=:\s]+([a-f0-9-]{36})/i);
+        const secretMatch   = fullOutput.match(/Client Secret\s*[:\s]+([^\s\n]+)/i);
+
+        if (clientIdMatch || secretMatch) {
+            if (clientIdMatch) {
+                document.getElementById(`result-${prefix}-clientid`).textContent = clientIdMatch[1].trim();
+            }
+            if (secretMatch) {
+                document.getElementById(`result-${prefix}-secret`).textContent = secretMatch[1].trim();
+            }
+            document.getElementById(`result-${prefix}-tenantid`).textContent = tenantId;
+            document.getElementById(`result-${prefix}`).classList.add('visible');
+            markFlowDone(flowStep);
+            if (flowStep === 2) markFlowDone(3);
+        }
+
+    } catch (err) {
+        consolePrint(`[NETWERK FOUT] ${err.message}`, 'err');
+    } finally {
+        btn.classList.remove('running'); btn.disabled = false;
     }
 }
 </script>

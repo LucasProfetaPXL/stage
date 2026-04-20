@@ -5,8 +5,7 @@ param(
     [string]$AppName = "XylosMigration_App"
 )
 
-Set-MgGraphOption -DisableLoginByWAM $true
-Connect-MgGraph -TenantId $CustomerTenantId -Scopes "Application.ReadWrite.All", "Directory.ReadWrite.All"
+Connect-MgGraph -TenantId $CustomerTenantId -Scopes "Application.ReadWrite.All", "Directory.ReadWrite.All" -UseDeviceCode
 
 $App = New-MgApplication -DisplayName $AppName
 $ServicePrincipal = New-MgServicePrincipal -AppId $App.AppId
