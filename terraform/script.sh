@@ -67,59 +67,58 @@ echo "[6b] Code fixes toepassen..."
 sed -i "s/spawn('powershell.exe'/spawn('pwsh'/g" /opt/app/server.js
 echo "server.js: powershell.exe vervangen door pwsh"
 
-# Fix 2: -File naar -Command met 6>&1 zodat device code zichtbaar is in browser
-# Vervangt de spawn aanroep om PowerShell stream 6 (Write-Host) door te sturen naar stdout
-python3 - <<'PYEOF'
-import re
+# Fix 2: -File naar -Command met 6>&1 (device code zichtbaar in browser)
+# Vervang de spawn sectie via node.js inline script
+node - <<'NODEJS'
+const fs = require('fs');
+const file = '/opt/app/server.js';
+let content = fs.readFileSync(file, 'utf8');
 
-with open('/opt/app/server.js', 'r') as f:
-    content = f.read()
-
-old = """    const ps = spawn('pwsh', [
+const oldSpawn = `    const ps = spawn('pwsh', [
         '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...psArgs
-    ], { env: process.env });"""
+    ], { env: process.env });`;
 
-new = """    const escapedPath = scriptPath.replace(/'/g, "''");
+const newSpawn = `    const escapedPath = scriptPath.replace(/'/g, "''");
     const argsStr = psArgs.map(a => {
         if (a.startsWith('-')) return a;
-        return `'${a.replace(/'/g, "''")}'`;
+        return "'" + a.replace(/'/g, "''") + "'";
     }).join(' ');
 
     const ps = spawn('pwsh', [
         '-NoProfile', '-ExecutionPolicy', 'Bypass',
-        '-Command', `& '${escapedPath}' ${argsStr} 6>&1`
-    ], { env: process.env });"""
+        '-Command', "& '" + escapedPath + "' " + argsStr + " 6>&1"
+    ], { env: process.env });`;
 
-if old in content:
-    content = content.replace(old, new)
-    with open('/opt/app/server.js', 'w') as f:
-        f.write(content)
-    print("server.js: 6>&1 fix toegepast")
-else:
-    print("server.js: spawn patroon niet gevonden - fix overgeslagen")
-PYEOF
+if (content.includes(oldSpawn)) {
+    content = content.replace(oldSpawn, newSpawn);
+    fs.writeFileSync(file, content);
+    console.log('server.js: 6>&1 fix toegepast');
+} else {
+    console.log('server.js: spawn patroon niet gevonden - fix overgeslagen');
+}
+NODEJS
 
-# Fix 3: isUtils check toevoegen als die nog niet bestaat
-python3 - <<'PYEOF'
-with open('/opt/app/server.js', 'r') as f:
-    content = f.read()
+# Fix 3: isUtils check toevoegen
+node - <<'NODEJS'
+const fs = require('fs');
+const file = '/opt/app/server.js';
+let content = fs.readFileSync(file, 'utf8');
 
-if 'isUtils' not in content:
-    old = "    const isFixJson = rawPath.toLowerCase().includes('fix_json');"
-    new = """    const isFixJson = rawPath.toLowerCase().includes('fix_json');
-    const isUtils   = rawPath.toLowerCase().includes('utils');"""
-    content = content.replace(old, new)
-
-    old = "    } else {\n        psArgs.push('-BackupDir', userBackupDir);"
-    new = "    } else if (!isUtils) {\n        psArgs.push('-BackupDir', userBackupDir);"
-    content = content.replace(old, new)
-
-    with open('/opt/app/server.js', 'w') as f:
-        f.write(content)
-    print("server.js: isUtils fix toegepast")
-else:
-    print("server.js: isUtils fix al aanwezig")
-PYEOF
+if (!content.includes('isUtils')) {
+    content = content.replace(
+        "    const isFixJson = rawPath.toLowerCase().includes('fix_json');",
+        "    const isFixJson = rawPath.toLowerCase().includes('fix_json');\n    const isUtils   = rawPath.toLowerCase().includes('utils');"
+    );
+    content = content.replace(
+        "    } else {\n        psArgs.push('-BackupDir', userBackupDir);",
+        "    } else if (!isUtils) {\n        psArgs.push('-BackupDir', userBackupDir);"
+    );
+    fs.writeFileSync(file, content);
+    console.log('server.js: isUtils fix toegepast');
+} else {
+    console.log('server.js: isUtils fix al aanwezig');
+}
+NODEJS
 
 # Fix 4: localhost URLs verwijderen in HTML bestanden
 sed -i 's|http://localhost:3000/api/run/|/api/run/|g' /opt/app/public/policy-migration.html
@@ -132,7 +131,7 @@ echo "HTML: localhost URLs vervangen"
 # Fix 5: Alias CustomerTenantId toevoegen aan utils PS1 scripts
 for ps1file in /opt/app/public/scripts/utils/Create_SourceTenant_App.ps1 /opt/app/public/scripts/utils/Create_DestTenant_App.ps1; do
     if [ -f "$ps1file" ]; then
-        if ! grep -q "Alias('CustomerTenantId')" "$ps1file"; then
+        if ! grep -q "CustomerTenantId" "$ps1file"; then
             sed -i "s/\[Parameter(Mandatory=\$true)\] \[string\]\$TenantId,/[Parameter(Mandatory=\$true)]\n    [Alias('CustomerTenantId')]\n    [string]\$TenantId,/" "$ps1file"
             echo "PS1 alias fix toegepast op $ps1file"
         else
@@ -249,28 +248,17 @@ EOF2
 else
     echo "Geen backup gevonden - nieuw certificaat aanvragen..."
 
-    # Probeer eerst Let's Encrypt
     SSL_OK=false
     if sudo certbot --nginx -d ${domain_name} --non-interactive --agree-tos -m ${email}; then
         SSL_OK=true
         echo "SSL certificaat succesvol aangemaakt via Let's Encrypt!"
     fi
 
-    # Fallback: ZeroSSL als Let's Encrypt rate limit bereikt
-    if [ "$SSL_OK" = false ]; then
+    if [ "$SSL_OK" = false ] && [ -n "${zerossl_kid}" ] && [ -n "${zerossl_hmac}" ]; then
         echo "Let's Encrypt mislukt - ZeroSSL proberen..."
-        if [ -n "${zerossl_kid}" ] && [ -n "${zerossl_hmac}" ]; then
-            if sudo certbot --nginx \
-              -d ${domain_name} \
-              --non-interactive \
-              --agree-tos \
-              -m ${email} \
-              --server https://acme.zerossl.com/v2/DV90 \
-              --eab-kid "${zerossl_kid}" \
-              --eab-hmac-key "${zerossl_hmac}"; then
-                SSL_OK=true
-                echo "SSL certificaat succesvol aangemaakt via ZeroSSL!"
-            fi
+        if sudo certbot --nginx -d ${domain_name} --non-interactive --agree-tos -m ${email} --server https://acme.zerossl.com/v2/DV90 --eab-kid "${zerossl_kid}" --eab-hmac-key "${zerossl_hmac}"; then
+            SSL_OK=true
+            echo "SSL certificaat succesvol aangemaakt via ZeroSSL!"
         fi
     fi
 
