@@ -195,8 +195,17 @@ function runScriptHandler(req, res) {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
 
+    // Bouw het PowerShell commando met 6>&1 om Write-Host/Information stream
+    // door te sturen naar stdout zodat de browser de device code ziet
+    const escapedPath = scriptPath.replace(/'/g, "''");
+    const argsStr = psArgs.map(a => {
+        if (a.startsWith('-')) return a;
+        return `'${a.replace(/'/g, "''")}'`;
+    }).join(' ');
+
     const ps = spawn('pwsh', [
-        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...psArgs
+        '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-Command', `& '${escapedPath}' ${argsStr} 6>&1`
     ], { env: process.env });
 
     ps.stdout.on('data', d => res.write(d.toString()));
