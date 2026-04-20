@@ -15,7 +15,7 @@ const port = 3000;
 app.use(cors());
 app.use(express.json());
 
-// ─── SESSIE ───────────────────────────────────────────────
+// SESSIE
 app.use(session({
     store: new SQLiteStore({ db: 'sessions.db', dir: './' }),
     secret: process.env.SESSION_SECRET || 'verander-dit-naar-een-lang-random-geheim',
@@ -28,11 +28,11 @@ app.use(session({
     }
 }));
 
-// ─── AUTH ROUTES ─────────────────────────────────────────
+// AUTH ROUTES
 app.post('/api/auth/login',  loginLimiter, handleLogin);
 app.post('/api/auth/logout', handleLogout);
 
-// ─── BEVEILIG ALLES BEHALVE LOGIN ────────────────────────
+// BEVEILIG ALLES BEHALVE LOGIN
 app.use((req, res, next) => {
     const openPaths = ['/login.html', '/style.css'];
     if (req.path.startsWith('/api/auth/') || openPaths.includes(req.path)) {
@@ -41,10 +41,10 @@ app.use((req, res, next) => {
     requireAuth(req, res, next);
 });
 
-// ─── STATIC FILES ────────────────────────────────────────
+// STATIC FILES
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── HUIDIGE USER OPHALEN ────────────────────────────────
+// HUIDIGE USER OPHALEN
 app.get('/api/auth/me', requireAuth, (req, res) => {
     res.json({ username: req.session.username, userId: req.session.userId });
 });
@@ -158,12 +158,14 @@ function runScriptHandler(req, res) {
     const isExport  = rawPath.toLowerCase().includes('export');
     const isImport  = rawPath.toLowerCase().includes('import');
     const isFixJson = rawPath.toLowerCase().includes('fix_json');
+    const isUtils   = rawPath.toLowerCase().includes('utils');
 
     // BackupDir of BackupBase meesturen afhankelijk van scripttype
+    // Utils-scripts (zoals Create_SourceTenant_App) verwachten geen BackupDir
     if (isFixJson) {
         psArgs.push('-BackupBase', userBackupDir);
         usedKeys.add('backupbase');
-    } else {
+    } else if (!isUtils) {
         psArgs.push('-BackupDir', userBackupDir);
         usedKeys.add('backupdir');
     }
@@ -205,7 +207,7 @@ function runScriptHandler(req, res) {
 app.post('/api/run/:folder/:scriptName', requireAuth, runScriptHandler);
 app.post('/api/run/:scriptName',         requireAuth, runScriptHandler);
 
-// ─── START ────────────────────────────────────────────────
+// START
 app.listen(port, () => {
-    console.log(`🚀 MIGRATION ENGINE actief op http://localhost:${port}`);
+    console.log(`Migration Engine actief op http://localhost:${port}`);
 });
