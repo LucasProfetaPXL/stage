@@ -42,6 +42,7 @@
 .progress-cat.active  { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,45,90,0.08); }
 .progress-cat.done    { border-color: var(--lime-dark); }
 .progress-cat.error   { border-color: var(--red); }
+.progress-cat.waiting { border-color: #f0a500; box-shadow: 0 0 0 3px rgba(240,165,0,0.12); }
 .progress-cat-header  { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
 .progress-cat-icon    { font-size: 18px; flex-shrink: 0; }
 .progress-cat-name    { font-size: 13px; font-weight: 700; color: var(--navy); flex: 1; }
@@ -50,7 +51,7 @@
 .status-running  { background: rgba(30,45,90,0.1); color: var(--navy); animation: pulse 1.5s infinite; }
 .status-done     { background: var(--lime-glow); color: var(--lime-dark); }
 .status-error    { background: #fde8e8; color: var(--red); }
-.status-skipped  { background: var(--off-white); color: var(--gray-text); }
+.status-waiting  { background: #fff3cd; color: #856404; }
 
 .progress-steps { display: flex; gap: 6px; padding: 0 16px 12px; flex-wrap: wrap; }
 .step-pill {
@@ -61,6 +62,7 @@
 .step-pill.running { background: rgba(30,45,90,0.08); color: var(--navy); border-color: var(--navy); }
 .step-pill.done    { background: var(--lime-glow); color: var(--lime-dark); border-color: var(--lime-dark); }
 .step-pill.error   { background: #fde8e8; color: var(--red); border-color: var(--red); }
+.step-pill.waiting { background: #fff3cd; color: #856404; border-color: #f0a500; }
 .step-pill-dot     { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
 .overall-bar-wrap { background: var(--gray-border); border-radius: 99px; height: 6px; overflow: hidden; margin-bottom: 8px; }
@@ -76,12 +78,83 @@
 }
 .btn-toggle-all:hover { background: var(--off-white); }
 
-
 .line-ok      { color: #3fb950 !important; }
 .line-err     { color: #ff7b72 !important; }
 .line-info    { color: #58a6ff !important; }
 .line-warn    { color: #d29922 !important; }
 .line-default { color: #8b949e !important; }
+
+/* ── POLICY SELECTION MODAL ── */
+.policy-modal-overlay {
+    position: fixed; inset: 0; background: rgba(10,15,30,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.policy-modal-overlay.open { opacity: 1; pointer-events: all; }
+.policy-modal {
+    background: var(--white); border-radius: 12px;
+    width: min(680px, 95vw); max-height: 80vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+    transform: translateY(12px); transition: transform .2s;
+}
+.policy-modal-overlay.open .policy-modal { transform: translateY(0); }
+.policy-modal-head {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--gray-border);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+}
+.policy-modal-title { font-size: 16px; font-weight: 800; color: var(--navy); }
+.policy-modal-sub   { font-size: 12px; color: var(--gray-text); margin-top: 3px; }
+.policy-modal-close {
+    background: none; border: none; font-size: 20px; cursor: pointer;
+    color: var(--gray-text); padding: 0 4px; line-height: 1; flex-shrink: 0;
+}
+.policy-modal-close:hover { color: var(--navy); }
+.policy-modal-toolbar {
+    padding: 12px 24px; border-bottom: 1px solid var(--gray-border);
+    display: flex; align-items: center; gap: 10px;
+}
+.policy-modal-toolbar button {
+    background: none; border: 1.5px solid var(--gray-border); border-radius: 6px;
+    padding: 4px 12px; font-family: inherit; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px; color: var(--gray-text); cursor: pointer;
+}
+.policy-modal-toolbar button:hover { border-color: var(--navy); color: var(--navy); }
+.policy-modal-count { font-size: 12px; color: var(--gray-text); margin-left: auto; }
+.policy-modal-body  { overflow-y: auto; flex: 1; padding: 8px 0; }
+.policy-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 24px; cursor: pointer; transition: background .1s;
+    border-bottom: 1px solid transparent;
+}
+.policy-item:hover { background: var(--off-white); }
+.policy-item.selected { background: rgba(30,45,90,0.04); }
+.policy-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--navy); flex-shrink: 0; cursor: pointer; }
+.policy-item-name { font-size: 13px; font-weight: 600; color: var(--navy); flex: 1; }
+.policy-item-file { font-size: 11px; color: var(--gray-text); font-family: monospace; }
+.policy-modal-foot {
+    padding: 16px 24px; border-top: 1px solid var(--gray-border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.policy-modal-foot-info { font-size: 12px; color: var(--gray-text); }
+.policy-modal-foot-info strong { color: var(--navy); }
+.btn-modal-skip {
+    background: none; border: 1.5px solid var(--gray-border); border-radius: var(--radius);
+    padding: 8px 18px; font-family: inherit; font-size: 12px; font-weight: 700;
+    color: var(--gray-text); cursor: pointer; transition: all .15s;
+}
+.btn-modal-skip:hover { border-color: var(--red); color: var(--red); }
+.btn-modal-import {
+    background: var(--navy); color: white; border: none;
+    border-radius: var(--radius); padding: 10px 22px;
+    font-family: inherit; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: background .15s; display: flex; align-items: center; gap: 8px;
+}
+.btn-modal-import:hover { background: #0f1d4a; }
+.btn-modal-import:disabled { opacity: 0.5; cursor: not-allowed; }
+.policy-empty { padding: 32px; text-align: center; color: var(--gray-text); font-size: 13px; }
 
 @media (max-width: 768px) { .cat-select-grid { grid-template-columns: 1fr 1fr; } }
     </style>
@@ -90,11 +163,43 @@
 
 <div id="nav-placeholder"></div>
 
+<!-- POLICY SELECTION MODAL -->
+<div class="policy-modal-overlay" id="policy-modal-overlay">
+    <div class="policy-modal">
+        <div class="policy-modal-head">
+            <div>
+                <div class="policy-modal-title" id="modal-title">Selecteer policies om te importeren</div>
+                <div class="policy-modal-sub" id="modal-sub">Kies welke policies je wil importeren naar de doeltenant</div>
+            </div>
+            <button class="policy-modal-close" onclick="skipImport()">&#10005;</button>
+        </div>
+        <div class="policy-modal-toolbar">
+            <button onclick="modalSelectAll()">&#9745; Alles</button>
+            <button onclick="modalDeselectAll()">&#9744; Geen</button>
+            <span class="policy-modal-count" id="modal-count">0 geselecteerd</span>
+        </div>
+        <div class="policy-modal-body" id="modal-body">
+            <div class="policy-empty">Policies laden...</div>
+        </div>
+        <div class="policy-modal-foot">
+            <div class="policy-modal-foot-info">
+                <strong id="modal-selected-count">0</strong> van <strong id="modal-total-count">0</strong> policies geselecteerd
+            </div>
+            <div style="display:flex;gap:10px">
+                <button class="btn-modal-skip" onclick="skipImport()">&#9135; Overslaan</button>
+                <button class="btn-modal-import" id="btn-modal-import" onclick="confirmImport()">
+                    &#8594; Importeer geselecteerde
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="page">
     <div class="page-header">
         <div class="breadcrumb"><a href="index.html">Dashboard</a> / Migratie / Full Policy Migration</div>
         <h1>Full Policy Migration</h1>
-        <p>Migreer alle geselecteerde policy-types in één keer. Export &rarr; Fix JSON &rarr; Import wordt automatisch per categorie uitgevoerd.</p>
+        <p>Migreer alle geselecteerde policy-types in één keer. Export &rarr; Fix JSON &rarr; <strong>Handmatige selectie</strong> &rarr; Import per categorie.</p>
     </div>
 
     <!-- CREDENTIALS -->
@@ -128,11 +233,11 @@
     <div class="card">
         <div class="card-header">
             <div class="card-icon blue">&#128203;</div>
-            <div><div class="card-title">Categorie&euml;n</div><div class="card-subtitle">Selecteer welke policy-types gemigreerd moeten worden</div></div>
+            <div><div class="card-title">Categorieën</div><div class="card-subtitle">Selecteer welke policy-types gemigreerd moeten worden</div></div>
         </div>
         <div class="select-bar">
             <button type="button" class="btn-toggle-all" onclick="toggleAllCats()">&#9745; Alles selecteren</button>
-            <span style="font-size:12px;color:var(--gray-text)"><strong id="selected-cat-count">0</strong> categorie&euml;n geselecteerd</span>
+            <span style="font-size:12px;color:var(--gray-text)"><strong id="selected-cat-count">0</strong> categorieën geselecteerd</span>
         </div>
         <div class="cat-select-grid" id="cat-select-grid">
             <label class="cat-select-item selected" data-cat="ca"><input type="checkbox" value="ca" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128737;&#65039;</span><div><div class="cat-select-label">Conditional Access</div><div class="cat-select-sub">CA policies</div></div></label>
@@ -145,7 +250,7 @@
             <label class="cat-select-item selected" data-cat="dc"><input type="checkbox" value="dc" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128187;</span><div><div class="cat-select-label">Device Config</div><div class="cat-select-sub">Device configurations</div></div></label>
             <label class="cat-select-item selected" data-cat="ps"><input type="checkbox" value="ps" checked onchange="updateCatCount()"><span class="cat-select-icon">&#128220;</span><div><div class="cat-select-label">PowerShell Scripts</div><div class="cat-select-sub">Scripts + Remediations</div></div></label>
         </div>
-        <div class="alert alert-warning" style="margin-bottom:0">&#9888;&#65039; &nbsp;Policies worden aangemaakt met status <strong>disabled</strong>. Schakel ze handmatig in na verificatie.</div>
+        <div class="alert alert-warning" style="margin-bottom:0">&#9888;&#65039; &nbsp;Na elke Fix JSON stap krijg je een overzicht van de geëxporteerde policies. Kies zelf welke je wil importeren.</div>
     </div>
 
     <!-- START BUTTON -->
@@ -181,6 +286,7 @@
 
 <script src="app.js"></script>
 <script>
+// ── CONSOLE ──
 function consolePrint(text) {
     const c = document.getElementById('output');
     if (!c) return;
@@ -203,22 +309,22 @@ function consolePrint(text) {
     while (c.children.length > 600) c.removeChild(c.firstChild);
     c.scrollTop = c.scrollHeight;
 }
-
 function consoleClear() {
     const c = document.getElementById('output');
     if (c) c.innerHTML = '<div class="line-info">> Console gereed...</div>';
 }
 
+// ── CATEGORIES ──
 const CATS = {
-    ca:   { label:'Conditional Access', icon:'&#128737;&#65039;', export:'export/Export_conditional_access',  fix:'fix_json/fix_json_conditional_access', import:'import/import_conditional_access'  },
-    av:   { label:'Antivirus',          icon:'&#129440;',         export:'export/Export_antivirus',           fix:'fix_json/fix_json_antiVirus',          import:'import/import_antivirus'           },
-    epm:  { label:'EPM',                icon:'&#128272;',         export:'export/Export_epm',                 fix:'fix_json/fix_json_epm',                import:'import/import_epm'                 },
-    comp: { label:'Compliance',         icon:'&#9989;',           export:'export/Export_compliance',          fix:'fix_json/fix_json_compliance',         import:'import/import_compliance'          },
-    ap:   { label:'App Protection',     icon:'&#128241;',         export:'export/Export_app_protection',      fix:'fix_json/fix_json_appprotection',      import:'import/import_app_protection'      },
-    sb:   { label:'Security Baseline',  icon:'&#128274;',         export:'export/Export_security_baseline',   fix:'fix_json/fix_json_securityBaseline',   import:'import/import_security_baseline'   },
-    sc:   { label:'Settings Catalog',   icon:'&#9881;&#65039;',   export:'export/Export_settings_catalog',    fix:'fix_json/fix_json_settingsCatalog',    import:'import/import_settings_catalog'    },
-    dc:   { label:'Device Config',      icon:'&#128187;',         export:'export/Export_device_config',       fix:'fix_json/fix_json_device_config',      import:'import/import_device_config'       },
-    ps:   { label:'PowerShell Scripts', icon:'&#128220;',         export:'export/Export_powershell_scripts',  fix:'fix_json/fix_json_powershell_scripts', import:'import/import_powershell_scripts'  },
+    ca:   { label:'Conditional Access', icon:'&#128737;&#65039;', export:'export/Export_conditional_access',  fix:'fix_json/fix_json_conditional_access', import:'import/import_conditional_access',  apiCat:'ca'   },
+    av:   { label:'Antivirus',          icon:'&#129440;',         export:'export/Export_antivirus',           fix:'fix_json/fix_json_antiVirus',          import:'import/import_antivirus',           apiCat:'av'   },
+    epm:  { label:'EPM',                icon:'&#128272;',         export:'export/Export_epm',                 fix:'fix_json/fix_json_epm',                import:'import/import_epm',                 apiCat:'epm'  },
+    comp: { label:'Compliance',         icon:'&#9989;',           export:'export/Export_compliance',          fix:'fix_json/fix_json_compliance',         import:'import/import_compliance',          apiCat:'comp' },
+    ap:   { label:'App Protection',     icon:'&#128241;',         export:'export/Export_app_protection',      fix:'fix_json/fix_json_appprotection',      import:'import/import_app_protection',      apiCat:'ap'   },
+    sb:   { label:'Security Baseline',  icon:'&#128274;',         export:'export/Export_security_baseline',   fix:'fix_json/fix_json_securityBaseline',   import:'import/import_security_baseline',   apiCat:'sb'   },
+    sc:   { label:'Settings Catalog',   icon:'&#9881;&#65039;',   export:'export/Export_settings_catalog',    fix:'fix_json/fix_json_settingsCatalog',    import:'import/import_settings_catalog',    apiCat:'sc'   },
+    dc:   { label:'Device Config',      icon:'&#128187;',         export:'export/Export_device_config',       fix:'fix_json/fix_json_device_config',      import:'import/import_device_config',       apiCat:'dc'   },
+    ps:   { label:'PowerShell Scripts', icon:'&#128220;',         export:'export/Export_powershell_scripts',  fix:'fix_json/fix_json_powershell_scripts', import:'import/import_powershell_scripts',  apiCat:'ps'   },
 };
 
 function updateCatCount() {
@@ -228,16 +334,15 @@ function updateCatCount() {
         el.classList.toggle('selected', el.querySelector('input').checked);
     });
 }
-
 function toggleAllCats() {
     const boxes = document.querySelectorAll('.cat-select-item input');
     const allChecked = [...boxes].every(b => b.checked);
     boxes.forEach(b => b.checked = !allChecked);
     updateCatCount();
 }
-
 updateCatCount();
 
+// ── PROGRESS UI ──
 function buildProgressUI(selectedCats) {
     const container = document.getElementById('migration-progress');
     container.innerHTML = '';
@@ -255,6 +360,7 @@ function buildProgressUI(selectedCats) {
             <div class="progress-steps" id="steps-${catId}">
                 <div class="step-pill" id="pill-${catId}-export"><span class="step-pill-dot"></span>Export</div>
                 <div class="step-pill" id="pill-${catId}-fix"><span class="step-pill-dot"></span>Fix JSON</div>
+                <div class="step-pill" id="pill-${catId}-select"><span class="step-pill-dot"></span>Selectie</div>
                 <div class="step-pill" id="pill-${catId}-import"><span class="step-pill-dot"></span>Import</div>
             </div>`;
         container.appendChild(div);
@@ -266,10 +372,10 @@ function setCatStatus(catId, status) {
     const badge = document.getElementById(`status-${catId}`);
     if (!el || !badge) return;
     el.className = `progress-cat ${status}`;
-    const labels  = { pending:'Wachten', running:'Bezig...', done:'Klaar &#10003;', error:'Fout &#10007;' };
-    const classes = { pending:'status-pending', running:'status-running', done:'status-done', error:'status-error' };
-    badge.className = `progress-cat-status ${classes[status]}`;
-    badge.innerHTML = labels[status];
+    const labels  = { pending:'Wachten', running:'Bezig...', done:'Klaar ✓', error:'Fout ✗', waiting:'Wacht op selectie...' };
+    const classes = { pending:'status-pending', running:'status-running', done:'status-done', error:'status-error', waiting:'status-waiting' };
+    badge.className = `progress-cat-status ${classes[status] || 'status-pending'}`;
+    badge.innerHTML = labels[status] || status;
 }
 
 function setPillStatus(catId, step, status) {
@@ -283,6 +389,7 @@ function updateOverallProgress(done, total) {
     document.getElementById('overall-pct').textContent = pct + '%';
 }
 
+// ── SCRIPT RUNNER ──
 async function runMigrationScript(scriptPath, payload) {
     const res = await fetch(`/api/run/${scriptPath}`, {
         method: 'POST',
@@ -293,11 +400,9 @@ async function runMigrationScript(scriptPath, payload) {
         consolePrint(`[FOUT] Server status ${res.status}`);
         return false;
     }
-
     const reader = res.body.getReader();
     const dec = new TextDecoder();
     let buf = '', hasError = false;
-
     while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -315,6 +420,73 @@ async function runMigrationScript(scriptPath, payload) {
     return !hasError;
 }
 
+// ── MODAL STATE ──
+let _modalResolve = null;
+
+function openPolicyModal(catId, files) {
+    return new Promise(resolve => {
+        _modalResolve = resolve;
+        const cat = CATS[catId];
+
+        document.getElementById('modal-title').textContent = `${cat.label} — Selecteer policies`;
+        document.getElementById('modal-sub').textContent = `${files.length} policies gevonden. Kies welke je wil importeren naar de doeltenant.`;
+        document.getElementById('modal-total-count').textContent = files.length;
+
+        const body = document.getElementById('modal-body');
+        if (files.length === 0) {
+            body.innerHTML = '<div class="policy-empty">⚠️ Geen policies gevonden na export/fix.</div>';
+        } else {
+            body.innerHTML = files.map((f, i) => {
+                const name = f.replace(/\.json$/i, '').replace(/_/g, ' ');
+                return `
+                <label class="policy-item selected" id="policy-item-${i}">
+                    <input type="checkbox" value="${f}" checked onchange="updateModalCount()">
+                    <div style="flex:1">
+                        <div class="policy-item-name">${name}</div>
+                        <div class="policy-item-file">${f}</div>
+                    </div>
+                </label>`;
+            }).join('');
+        }
+
+        updateModalCount();
+        document.getElementById('policy-modal-overlay').classList.add('open');
+        document.getElementById('btn-modal-import').disabled = files.length === 0;
+    });
+}
+
+function updateModalCount() {
+    const checked = document.querySelectorAll('#modal-body input:checked');
+    const total   = document.querySelectorAll('#modal-body input').length;
+    document.getElementById('modal-selected-count').textContent = checked.length;
+    document.getElementById('modal-count').textContent = `${checked.length} geselecteerd`;
+    document.getElementById('btn-modal-import').disabled = checked.length === 0;
+    document.querySelectorAll('#modal-body .policy-item').forEach(el => {
+        el.classList.toggle('selected', el.querySelector('input').checked);
+    });
+}
+
+function modalSelectAll() {
+    document.querySelectorAll('#modal-body input').forEach(b => b.checked = true);
+    updateModalCount();
+}
+function modalDeselectAll() {
+    document.querySelectorAll('#modal-body input').forEach(b => b.checked = false);
+    updateModalCount();
+}
+
+function confirmImport() {
+    const selected = [...document.querySelectorAll('#modal-body input:checked')].map(b => b.value);
+    document.getElementById('policy-modal-overlay').classList.remove('open');
+    if (_modalResolve) { _modalResolve({ action: 'import', files: selected }); _modalResolve = null; }
+}
+
+function skipImport() {
+    document.getElementById('policy-modal-overlay').classList.remove('open');
+    if (_modalResolve) { _modalResolve({ action: 'skip', files: [] }); _modalResolve = null; }
+}
+
+// ── MAIN MIGRATION ──
 async function startFullMigration() {
     const srcTenantId = document.getElementById('src-TenantId').value.trim();
     const srcClientId = document.getElementById('src-ClientId').value.trim();
@@ -328,7 +500,7 @@ async function startFullMigration() {
     }
 
     const selectedCats = [...document.querySelectorAll('.cat-select-item input:checked')].map(b => b.value);
-    if (selectedCats.length === 0) { alert('Selecteer minstens &#233;&#233;n categorie.'); return; }
+    if (selectedCats.length === 0) { alert('Selecteer minstens één categorie.'); return; }
 
     const btn = document.getElementById('btn-start');
     btn.classList.add('running');
@@ -339,32 +511,33 @@ async function startFullMigration() {
     consoleClear();
     document.getElementById('progress-section').scrollIntoView({ behavior: 'smooth' });
 
-    const totalSteps = selectedCats.length * 3;
+    // 4 stappen per categorie: export, fix, select, import
+    const totalSteps = selectedCats.length * 4;
     let doneSteps = 0;
-
     document.getElementById('overall-status-text').textContent = `Migratie gestart — ${selectedCats.length} categorieën`;
 
     for (const catId of selectedCats) {
         const cat = CATS[catId];
         setCatStatus(catId, 'running');
-
         consolePrint(`> ── ${cat.label.toUpperCase()} ──`);
 
-        // EXPORT
+        // ── STAP 1: EXPORT ──
         setPillStatus(catId, 'export', 'running');
         consolePrint(`> Export: ${cat.label}`);
-        const exportOk = await runMigrationScript(cat.export, { TenantId: srcTenantId, ClientId: srcClientId, ClientSecret: srcSecret });
+        const exportOk = await runMigrationScript(cat.export, {
+            TenantId: srcTenantId, ClientId: srcClientId, ClientSecret: srcSecret
+        });
         setPillStatus(catId, 'export', exportOk ? 'done' : 'error');
         doneSteps++; updateOverallProgress(doneSteps, totalSteps);
 
         if (!exportOk) {
-            consolePrint(`[FOUT] Export mislukt — overgeslagen`);
+            consolePrint(`[FOUT] Export mislukt — categorie overgeslagen`);
             setCatStatus(catId, 'error');
-            doneSteps += 2; updateOverallProgress(doneSteps, totalSteps);
+            doneSteps += 3; updateOverallProgress(doneSteps, totalSteps);
             continue;
         }
 
-        // FIX JSON
+        // ── STAP 2: FIX JSON ──
         setPillStatus(catId, 'fix', 'running');
         consolePrint(`> Fix JSON: ${cat.label}`);
         const fixOk = await runMigrationScript(cat.fix, {});
@@ -374,17 +547,51 @@ async function startFullMigration() {
         if (!fixOk) {
             consolePrint(`[FOUT] Fix JSON mislukt — import overgeslagen`);
             setCatStatus(catId, 'error');
+            doneSteps += 2; updateOverallProgress(doneSteps, totalSteps);
+            continue;
+        }
+
+        // ── STAP 3: HANDMATIGE SELECTIE ──
+        setPillStatus(catId, 'select', 'waiting');
+        setCatStatus(catId, 'waiting');
+        consolePrint(`> Wacht op selectie voor: ${cat.label}`);
+
+        // Haal de lijst van geëxporteerde JSON files op via de API
+        let fileList = [];
+        try {
+            const resp = await fetch(`/api/json-files/${cat.apiCat}`);
+            if (resp.ok) {
+                const data = await resp.json();
+                fileList = (data.files || []).map(f => f.fileName);
+            }
+        } catch (e) {
+            consolePrint(`[WARN] Kon bestandslijst niet ophalen: ${e.message}`);
+        }
+
+        const selection = await openPolicyModal(catId, fileList);
+        setPillStatus(catId, 'select', 'done');
+        doneSteps++; updateOverallProgress(doneSteps, totalSteps);
+
+        if (selection.action === 'skip' || selection.files.length === 0) {
+            consolePrint(`> Import overgeslagen voor: ${cat.label}`);
+            setPillStatus(catId, 'import', 'waiting');
+            setCatStatus(catId, 'done');
             doneSteps++; updateOverallProgress(doneSteps, totalSteps);
             continue;
         }
 
-        // IMPORT
+        consolePrint(`> ${selection.files.length} policies geselecteerd voor import`);
+
+        // ── STAP 4: IMPORT ──
         setPillStatus(catId, 'import', 'running');
+        setCatStatus(catId, 'running');
         consolePrint(`> Import: ${cat.label}`);
-        const importOk = await runMigrationScript(cat.import, { TenantId: dstTenantId, ClientId: dstClientId, ClientSecret: dstSecret, SelectedFiles: '' });
+        const importOk = await runMigrationScript(cat.import, {
+            TenantId: dstTenantId, ClientId: dstClientId, ClientSecret: dstSecret,
+            SelectedFiles: selection.files.join(',')
+        });
         setPillStatus(catId, 'import', importOk ? 'done' : 'error');
         doneSteps++; updateOverallProgress(doneSteps, totalSteps);
-
         setCatStatus(catId, importOk ? 'done' : 'error');
     }
 
