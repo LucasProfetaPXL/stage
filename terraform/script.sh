@@ -312,4 +312,4 @@ touch /var/log/startup_done
 echo ""
 echo "Setup voltooid: $(date)"
 echo "Standaard login: admin / Admin@Xylos123!"
-echo "Verander het wachtwoord meteen na de eerste login!"
+echo "Verander het wachtwoord meteen na de eerste login!"  
