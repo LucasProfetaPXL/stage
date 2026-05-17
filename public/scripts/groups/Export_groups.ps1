@@ -15,6 +15,9 @@ if ([string]::IsNullOrWhiteSpace($TenantId)) {
     return
 }
 
+Import-Module Microsoft.Graph.Authentication -ErrorAction SilentlyContinue
+Import-Module Microsoft.Graph.Groups -ErrorAction SilentlyContinue
+
 # Authenticatie logica
 if (![string]::IsNullOrWhiteSpace($ClientSecret) -and ![string]::IsNullOrWhiteSpace($ClientId)) {
     # Headless mode (Docker/Service Principal)

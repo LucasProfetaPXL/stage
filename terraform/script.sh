@@ -33,6 +33,7 @@ pwsh -NonInteractive -Command "
     Install-Module -Name Microsoft.Graph.Beta.DeviceManagement -Force -Scope AllUsers
     Install-Module -Name Microsoft.Graph.Beta.DeviceManagement.Actions -Force -Scope AllUsers
     Install-Module -Name Microsoft.Graph.Beta.Devices.CorporateManagement -Force -Scope AllUsers
+    Install-Module -Name Microsoft.Graph.Groups -Force -Scope AllUsers
     Install-Module -Name Microsoft.Graph.Applications -Force -Scope AllUsers
     Install-Module -Name Microsoft.Graph.Identity.SignIns -Force -Scope AllUsers
     Write-Host 'PS modules geinstalleerd'
@@ -141,9 +142,20 @@ for ps1file in /opt/app/public/scripts/utils/Create_SourceTenant_App.ps1 /opt/ap
     fi
 done
 
-# Fix 6: git safe directory instellen
-git config --global --add safe.directory /opt/app
+# Fix 6: git safe directory instellen (system-wide zodat alle gebruikers kunnen pullen)
+git config --system --add safe.directory /opt/app
 echo "Git: safe directory ingesteld"
+
+# Fix 7: auto-deploy script aanmaken zodat git pull + pm2 restart zonder handmatig inloggen werkt
+cat > /usr/local/bin/deploy-app <<'DEPLOY'
+#!/bin/bash
+set -e
+git -C /opt/app pull --no-rebase
+HOME=/root pm2 restart migration_engine
+echo "Deploy klaar: $(date)"
+DEPLOY
+chmod +x /usr/local/bin/deploy-app
+echo "Deploy script aangemaakt op /usr/local/bin/deploy-app"
 
 # Session secret genereren
 echo "[7/8] Session secret instellen..."
