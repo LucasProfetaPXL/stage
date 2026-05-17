@@ -29,6 +29,13 @@ $SecureToken = [System.Security.SecureString]::new()
 foreach ($char in $Global:MgToken.ToCharArray()) { $SecureToken.AppendChar($char) }
 Connect-MgGraph -AccessToken $SecureToken -NoWelcome
 
+$MainBackupDir = if ($BackupDir -ne "") { $BackupDir } else { Join-Path $PSScriptRoot "GoldenTenant_Backup" }
+$MainBackupDir = [System.IO.Path]::GetFullPath($MainBackupDir)
+
+$PlatformPath = Join-Path $MainBackupDir "PowerShellScripts"
+if (!(Test-Path $PlatformPath)) { New-Item -ItemType Directory -Path $PlatformPath -Force | Out-Null }
+
+Write-Host "Platform Scripts map: $PlatformPath" -ForegroundColor Gray
 Write-Host "Ophalen van Platform Scripts..." -ForegroundColor Yellow
 
 try {
@@ -45,8 +52,7 @@ try {
 }
 
 # ── Remediations (deviceHealthScripts) ───────────────────────
-$RemediationPath = Join-Path -Path $PSScriptRoot -ChildPath "GoldenTenant_Backup\Remediations"
-$RemediationPath = [System.IO.Path]::GetFullPath($RemediationPath)
+$RemediationPath = [System.IO.Path]::GetFullPath((Join-Path $MainBackupDir "Remediations"))
 if (!(Test-Path $RemediationPath)) { New-Item -ItemType Directory -Path $RemediationPath -Force | Out-Null }
 
 Write-Host "`nRemediations map: $RemediationPath" -ForegroundColor Gray

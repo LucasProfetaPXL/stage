@@ -29,15 +29,15 @@ $SecureToken = [System.Security.SecureString]::new()
 foreach ($char in $Global:MgToken.ToCharArray()) { $SecureToken.AppendChar($char) }
 Connect-MgGraph -AccessToken $SecureToken -NoWelcome
 
-$ExportPath = Join-Path -Path $PSScriptRoot -ChildPath "GoldenTenant_Backup\DeviceConfigurations"
-$ExportPath = [System.IO.Path]::GetFullPath($ExportPath)
+$MainBackupDir = if ($BackupDir -ne "") { $BackupDir } else { Join-Path $PSScriptRoot "GoldenTenant_Backup" }
+$ExportPath = [System.IO.Path]::GetFullPath((Join-Path $MainBackupDir "DeviceConfigurations"))
 if (!(Test-Path $ExportPath)) { New-Item -ItemType Directory -Path $ExportPath -Force | Out-Null }
 
 Write-Host "Backup map: $ExportPath" -ForegroundColor Gray
 Write-Host "Ophalen van Device Configurations..." -ForegroundColor Yellow
 
 try {
-    $Configs = Get-MgDeviceManagementDeviceConfiguration -All
+    $Configs = Get-MgBetaDeviceManagementDeviceConfiguration -All
     Write-Host "Gevonden: $($Configs.Count)" -ForegroundColor Cyan
 
     foreach ($Config in $Configs) {

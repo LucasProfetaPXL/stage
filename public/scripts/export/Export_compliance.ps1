@@ -1,4 +1,5 @@
 param(
+    [string]$BackupDir = "",
     [Parameter(Mandatory=$true)] [string]$TenantId,
     [Parameter(Mandatory=$true)] [string]$ClientId,
     [Parameter(Mandatory=$true)] [string]$ClientSecret

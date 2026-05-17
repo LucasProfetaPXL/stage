@@ -1,4 +1,5 @@
 param(
+    [string]$BackupDir = "",
     [Parameter(Mandatory=$true)] [string]$TenantId,
     [Parameter(Mandatory=$true)] [string]$ClientId,
     [Parameter(Mandatory=$true)] [string]$ClientSecret
@@ -21,7 +22,8 @@ $SecureToken = [System.Security.SecureString]::new()
 foreach ($char in $Global:MgToken.ToCharArray()) { $SecureToken.AppendChar($char) }
 Connect-MgGraph -AccessToken $SecureToken -NoWelcome
 
-$ExportPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "GoldenTenant_Backup\SettingsCatalog"))
+$MainBackupDir = if ($BackupDir -ne "") { $BackupDir } else { Join-Path $PSScriptRoot "GoldenTenant_Backup" }
+$ExportPath = [System.IO.Path]::GetFullPath((Join-Path $MainBackupDir "SettingsCatalog"))
 if (!(Test-Path $ExportPath)) { New-Item -ItemType Directory -Path $ExportPath -Force | Out-Null }
 
 Write-Host "Backup map: $ExportPath" -ForegroundColor Gray

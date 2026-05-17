@@ -4,6 +4,13 @@ param(
 
 $BackupDir = if ($BackupBase -ne "") { Join-Path $BackupBase "CompliancePolicies" } else { Join-Path -Path $PSScriptRoot -ChildPath "..\export\GoldenTenant_Backup\CompliancePolicies" }
 $BackupDir = [System.IO.Path]::GetFullPath($BackupDir)
+
+if (-not (Test-Path $BackupDir)) {
+    Write-Host "[INFO] Geen CompliancePolicies-map gevonden op: $BackupDir" -ForegroundColor Yellow
+    Write-Host "[INFO] Voer eerst de Export stap uit voordat u Fix JSON uitvoert." -ForegroundColor Yellow
+    exit 0
+}
+
 $Files = Get-ChildItem -Path $BackupDir -Filter "*.json"
 
 foreach ($File in $Files) {

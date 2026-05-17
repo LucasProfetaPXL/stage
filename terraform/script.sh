@@ -32,6 +32,7 @@ pwsh -NonInteractive -Command "
     Install-Module -Name Microsoft.Graph.Beta.Identity.SignIns -Force -Scope AllUsers
     Install-Module -Name Microsoft.Graph.Beta.DeviceManagement -Force -Scope AllUsers
     Install-Module -Name Microsoft.Graph.Beta.DeviceManagement.Actions -Force -Scope AllUsers
+    Install-Module -Name Microsoft.Graph.Beta.Devices.CorporateManagement -Force -Scope AllUsers
     Install-Module -Name Microsoft.Graph.Applications -Force -Scope AllUsers
     Install-Module -Name Microsoft.Graph.Identity.SignIns -Force -Scope AllUsers
     Write-Host 'PS modules geinstalleerd'
